@@ -10,7 +10,7 @@ data_agent/venv/
 data_agent/.ipynb_checkpoints/
 
 # RAG / vector DB (back end)
-back end/chroma_db/
+back end/chroma_data/
 
 # Env
 .env
