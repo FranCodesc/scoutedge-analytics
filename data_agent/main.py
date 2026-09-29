@@ -1,7 +1,8 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
@@ -15,13 +16,17 @@ from agent import build_data_agent, CHARTS_DIR
 
 load_dotenv()
 
+# Path assoluto basato sulla posizione di questo file, non sulla working directory
+# di avvio: cosi' funziona indipendentemente da dove viene lanciato 'uvicorn'.
+BASE_DIR = Path(__file__).resolve().parent
+
 # Stato condiviso dell'app: caricato una sola volta all'avvio, non ad ogni richiesta
 state = {}
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    df_raw = pd.read_csv("../data/scouting_data.csv")
+    df_raw = pd.read_csv(BASE_DIR / ".." / "data" / "scouting_data.csv")
     df_clean = clean_scouting_data(df_raw)
 
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
@@ -63,9 +68,15 @@ def health_check():
 def analyze(payload: Question):
     agent = state["agent"]
 
-    risposta = agent.invoke({
-        "messages": [{"role": "user", "content": payload.question}]
-    })
+    try:
+        risposta = agent.invoke({
+            "messages": [{"role": "user", "content": payload.question}]
+        })
+    except Exception as e:
+        # Errore lato agente (es. rate limit OpenAI, timeout, errore di rete):
+        # lo trasformiamo in una risposta HTTP leggibile invece di un 500 generico,
+        # cosi' il back end Express che chiama questo endpoint puo' gestirlo.
+        raise HTTPException(status_code=502, detail=f"Errore nell'agente: {e}")
 
     answer_text = risposta["messages"][-1].content
 
