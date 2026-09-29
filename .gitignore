@@ -1,0 +1,22 @@
+# Node
+node_modules/
+front end/dist/
+front end/.vite/
+
+# Python
+data_agent/venv/
+**/__pycache__/
+*.pyc
+data_agent/.ipynb_checkpoints/
+
+# RAG / vector DB (back end)
+back end/chroma_db/
+
+# Env
+.env
+
+# OS
+.DS_Store
+
+# Grafici generati dai test del data agent (rigenerabili automaticamente)
+data_agent/charts/*.png
