@@ -13,6 +13,27 @@ MAPPA_CORREZIONE_NOMI = {
     '佐藤 裕太': 'Sato Yuta',
 }
 
+CLUB_CANONICI = [
+    "Altopiano Sporting", "Arena Meridiana FC", "Atletico Serrano", "Baia Dorata FC",
+    "Borgo Union", "Cima Bianca FC", "Costa Azzurra FC", "Delta Sporting Club",
+    "Fiume Rosso AC", "Foresta Nera AC", "Isola Verde United", "Lago Blu United",
+    "Monte Grigio SC", "Nord Stella FC", "Pineta Calcio", "Ponte Vecchio FC",
+    "Portofino AC", "Radura United", "Real Cascata FC", "Rocca Sportiva",
+    "Scogliera AC", "Stelluccia Sporting", "Torretta United", "Vallata Calcio",
+    "Vigneto Calcio",
+]
+
+# chiave normalizzata (senza spazi di troppo, tutto minuscolo) -> grafia canonica
+_CLUB_LOOKUP = {" ".join(nome.split()).casefold(): nome for nome in CLUB_CANONICI}
+
+
+def _normalize_club(value):
+    chiave = " ".join(str(value).split()).casefold()
+    try:
+        return _CLUB_LOOKUP[chiave]
+    except KeyError:
+        raise ValueError(f"Club sconosciuto nel dataset: {value!r}") from None
+
 
 def _parse_market_value(value):
     value = str(value).strip()
@@ -33,10 +54,13 @@ def _parse_mixed_date(value):
 
 def clean_scouting_data(df_raw: pd.DataFrame) -> pd.DataFrame:
     """Applica la procedura di cleaning descritta nella sezione 6 di platform_handbook.md."""
-    df = df_raw.drop_duplicates().copy()
+    df = df_raw.copy()
 
     # normalizzazione nationality
     df['nationality'] = df['nationality'].str.strip().str.title()
+
+    # normalizzazione club: mappatura canonica case-insensitive (non .title(), che rovinerebbe le sigle)
+    df['club'] = df['club'].apply(_normalize_club)
 
     # market_value_eur: stringa mista -> float
     df['market_value_eur'] = df['market_value_eur'].apply(_parse_market_value)
@@ -50,12 +74,22 @@ def clean_scouting_data(df_raw: pd.DataFrame) -> pd.DataFrame:
     df['sprint_speed_kmh'] = df['sprint_speed_kmh'].abs()
     df.loc[df['height_cm'] > 210, 'height_cm'] /= 10
 
+    # traslitterazione nomi giapponesi (mappatura Hepburn manuale, non unidecode)
+    df['player_name'] = df['player_name'].replace(MAPPA_CORREZIONE_NOMI)
+
+    # deduplica: DOPO tutte le normalizzazioni (righe uguali nella sostanza ma scritte
+    # in modo diverso diventano identiche) e PRIMA dell'imputazione (le mediane non
+    # devono essere calcolate su righe doppie)
+    df = df.drop_duplicates()
+
     # imputazione valori mancanti (mediana per ruolo/stagione)
     cols_da_imputare = ['weight_kg', 'xg', 'xa', 'pass_accuracy_pct', 'sprint_speed_kmh', 'injury_days_last_season']
     for col in cols_da_imputare:
         df[col] = df.groupby(['position', 'season'])[col].transform(lambda x: x.fillna(x.median()))
 
-    # traslitterazione nomi giapponesi (mappatura Hepburn manuale, non unidecode)
-    df['player_name'] = df['player_name'].replace(MAPPA_CORREZIONE_NOMI)
 
+    #controlli di sicurezza
+    assert df['club'].nunique() == len(CLUB_CANONICI), "Il cleaning dei club non ha prodotto i club attesi"
+    assert df.duplicated().sum() == 0, "Restano righe duplicate dopo il cleaning"
+    
     return df
