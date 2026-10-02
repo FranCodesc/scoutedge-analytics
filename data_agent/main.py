@@ -11,7 +11,7 @@ import re
 import pandas as pd
 from langchain_openai import ChatOpenAI
 
-from cleaning import clean_scouting_data
+from cleaning import clean_scouting_data, format_cleaning_report
 from agent import build_data_agent, CHARTS_DIR
 
 load_dotenv()
@@ -27,10 +27,10 @@ state = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     df_raw = pd.read_csv(BASE_DIR / ".." / "data" / "scouting_data.csv")
-    df_clean = clean_scouting_data(df_raw)
+    df_clean, cleaning_report = clean_scouting_data(df_raw)
 
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-    agent = build_data_agent(df_clean, llm)
+    agent = build_data_agent(df_clean, llm, format_cleaning_report(cleaning_report))
 
     state["agent"] = agent
     print(f"Data agent pronto — dataframe caricato: {df_clean.shape}")

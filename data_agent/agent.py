@@ -62,8 +62,9 @@ def make_python_tool(df):
     return python_repl
 
 
-def build_data_agent(df, llm):
+def build_data_agent(df, llm, cleaning_summary):
     """Costruisce un agente ReAct per l'analisi del dataframe 'df'.
+    'cleaning_summary' è il testo che riassume le correzioni applicate ai dati.
     Restituisce l'agente pronto per .invoke()."""
 
     python_tool = make_python_tool(df)
@@ -80,8 +81,21 @@ Usa sempre 'player_id' come chiave univoca del giocatore (mai 'player_name', per
 Se la domanda riguarda lo stato ATTUALE di un giocatore (es. valore di mercato attuale, ultimo rating),
 NON prendere il valore massimo/minimo storico. Usa esattamente questo procedimento per ottenere
 la riga più recente per ciascun giocatore:
-    df.sort_values('observation_date').drop_duplicates(subset='player_id', keep='last')
+    df.sort_values('observation_date', kind='stable').drop_duplicates(subset='player_id', keep='last')
+L'ordinamento stabile (kind='stable') è obbligatorio: se un giocatore ha più osservazioni nella stessa data,
+vince la riga che compare per ultima nel dataframe, cioè l'ultima registrata. Non cambiare questo criterio.
 Poi applica eventuali filtri o ordinamenti richiesti dalla domanda su questo sottoinsieme.
+
+Quando la domanda riguarda lo stato attuale di uno o più giocatori specifici (indicati per 'player_id'), dopo aver
+ottenuto la riga più recente esegui SEMPRE anche questo controllo nello stesso blocco di codice, sostituendo l'elenco
+degli id (ids) con quelli richiesti:
+    ids = [70]
+    ultimo = df[df['player_id'].isin(ids)].groupby('player_id')['observation_date'].transform('max')
+    print(df[df['player_id'].isin(ids) & (df['observation_date'] == ultimo)][['player_id', 'observation_date', 'scout_name', 'scout_rating']])
+Se per un giocatore compare più di una riga, la risposta deve avere sempre questo ordine: (1) prima indica il valore
+attuale, cioè quello dell'ultima riga registrata (quella che compare per ultima nell'output), come risposta alla
+domanda; (2) poi segnala che in quella data esistono più osservazioni dello stesso giocatore, indicando per ciascuna
+scout_name e il valore della metrica richiesta. Non omettere mai il punto (1).
 
 Se una domanda richiede informazioni non presenti tra le colonne del dataframe, NON rispondere con
 conoscenza generale esterna: dichiara esplicitamente che il dataset non contiene quell'informazione,
@@ -95,6 +109,11 @@ dato non esiste nel dataset: verifica prima se stai usando il valore/etichetta c
 Quando generi un grafico, NON inserire link o riferimenti al file dell'immagine nella tua risposta
 testuale (niente markdown tipo [testo](percorso), niente menzione del path del file). Limitati a
 descrivere a parole cosa mostra il grafico: il file viene gestito e mostrato separatamente
-dall'applicazione, non dalla tua risposta."""
+dall'applicazione, non dalla tua risposta.
+
+Riepilogo delle correzioni applicate ai dati durante il cleaning:
+{cleaning_summary}
+
+Se ti chiedono quali correzioni sono state applicate ai dati (pulizia, qualità, duplicati, valori mancanti, anomalie), rispondi usando SOLO i numeri di questo riepilogo, riportandoli senza modificarli. Inizia sempre indicando quante righe aveva il file originale e quante ne ha il dataset pulito, e specifica a quali righe si riferiscono i conteggi (file grezzo per le correzioni, righe dopo la deduplica per le imputazioni). Non ricalcolarli dal dataframe: contiene già i dati puliti e non permette di ricostruirli. Se ti chiedono un dettaglio non presente nel riepilogo, dichiaralo."""
 
     return create_agent(llm, [python_tool], system_prompt=system_prompt_text)
