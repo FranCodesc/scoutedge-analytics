@@ -89,7 +89,7 @@ Poi applica eventuali filtri o ordinamenti richiesti dalla domanda su questo sot
 Quando la domanda riguarda lo stato attuale di uno o più giocatori specifici (indicati per 'player_id'), dopo aver
 ottenuto la riga più recente esegui SEMPRE anche questo controllo nello stesso blocco di codice, sostituendo l'elenco
 degli id (ids) con quelli richiesti:
-    ids = [70]
+    ids = [<lista degli player_id richiesti>]
     ultimo = df[df['player_id'].isin(ids)].groupby('player_id')['observation_date'].transform('max')
     print(df[df['player_id'].isin(ids) & (df['observation_date'] == ultimo)][['player_id', 'observation_date', 'scout_name', 'scout_rating']])
 Se per un giocatore compare più di una riga, la risposta deve avere sempre questo ordine: (1) prima indica il valore

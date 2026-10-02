@@ -53,11 +53,14 @@ def _parse_mixed_date(value):
 
 
 def clean_scouting_data(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
-    """..."""   # lascia la docstring com'è
+    """Applica la procedura di cleaning descritta nella sezione 6 di platform_handbook.md.
+    Restituisce (dataframe pulito, report delle correzioni).
+    I conteggi delle correzioni sono riferiti alle righe del file grezzo; quelli delle
+    imputazioni alle righe rimaste dopo la deduplica."""
     df = df_raw.copy()
     report = {"righe_originali": len(df_raw)}
 
-     # normalizzazione nationality
+    # normalizzazione nationality
     nat_prima = df['nationality']
     df['nationality'] = df['nationality'].str.strip().str.title()
     report['nationality'] = {
@@ -155,7 +158,7 @@ def clean_scouting_data(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
         raise ValueError("Restano righe duplicate dopo il cleaning")
     return df, report
 
-#trasformazione dizionario in testo cosi da passarlo al syste prompt
+# trasformazione del dizionario in testo, da passare al system prompt dell'agente
 def format_cleaning_report(report: dict) -> str:
     """Trasforma il cleaning_report in un testo in italiano da dare all'agente."""
     nat = report['nationality']
