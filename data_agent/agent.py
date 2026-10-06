@@ -137,8 +137,10 @@ def build_data_agent(df, llm, cleaning_summary):
     # 2. Struttura dei dati: ogni riga è un'osservazione nel tempo, quindi un giocatore compare
     #    più volte e metriche come valore di mercato e rating cambiano.
     # 3. Chiave del giocatore: sempre 'player_id', mai 'player_name' (omonimie).
-    # 4. Stato "attuale": procedura esatta con ordinamento stabile (kind='stable'). Il criterio
-    #    è deterministico: a parità di data vince la riga registrata per ultima.
+    # 4. Stato "attuale": procedura esatta con ordinamento stabile (kind='stable'), valida anche
+    #    per massimi, minimi e classifiche su tutti i giocatori (bug emerso nella regressione D7:
+    #    "valore attuale più alto nel dataset" restituiva il massimo storico). Il criterio è
+    #    deterministico: a parità di data vince la riga registrata per ultima.
     # 5. Controllo D8: per giocatori specifici stampa tutte le osservazioni della data più
     #    recente e segnala i casi con più righe, con ordine fisso (prima il valore attuale,
     #    poi la segnalazione). Senza l'ordine fisso il modello a volte ometteva il valore.
@@ -161,9 +163,12 @@ all'altra nel tempo.
 
 Usa sempre 'player_id' come chiave univoca del giocatore (mai 'player_name', per rischio di omonimie).
 
-Se la domanda riguarda lo stato ATTUALE di un giocatore (es. valore di mercato attuale, ultimo rating),
-NON prendere il valore massimo/minimo storico. Usa esattamente questo procedimento per ottenere
-la riga più recente per ciascun giocatore:
+Se la domanda riguarda lo stato ATTUALE (parole come 'attuale', 'oggi', 'ora', 'ultimo', 'più recente'), sia di un
+singolo giocatore sia di un gruppo sia di TUTTI i giocatori (es. valore di mercato attuale, ultimo rating, il
+giocatore più prezioso oggi, classifiche o medie attuali), NON calcolare massimi, minimi o medie su tutte le righe
+di df: ogni giocatore ha molte osservazioni e il massimo storico non è il valore attuale. Parti SEMPRE da questo
+procedimento per ottenere la riga più recente per ciascun giocatore, e applica massimi, minimi, medie o classifiche
+solo dopo, su questo sottoinsieme:
     df.sort_values('observation_date', kind='stable').drop_duplicates(subset='player_id', keep='last')
 L'ordinamento stabile (kind='stable') è obbligatorio: se un giocatore ha più osservazioni nella stessa data,
 vince la riga che compare per ultima nel dataframe, cioè l'ultima registrata. Non cambiare questo criterio.
