@@ -30,9 +30,13 @@ async def lifespan(app: FastAPI):
     df_clean, cleaning_report = clean_scouting_data(df_raw)
 
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-    agent = build_data_agent(df_clean, llm, format_cleaning_report(cleaning_report))
 
-    state["agent"] = agent
+    # L'agente NON si costruisce qui: ogni richiesta ne vuole uno nuovo (con il suo namespace
+    # e la sua copia di df), così le richieste non si influenzano. Si conservano solo gli
+    # ingredienti, che nessuna richiesta modifica.
+    state["df"] = df_clean
+    state["llm"] = llm
+    state["cleaning_summary"] = format_cleaning_report(cleaning_report)
     print(f"Data agent pronto — dataframe caricato: {df_clean.shape}")
 
     yield  # l'app gira qui
@@ -56,7 +60,9 @@ class Answer(BaseModel):
     chart_url: str | None = None
 
 
-CHART_NOTE_PATTERN = re.compile(r"\[Grafico salvato correttamente in: (.+?)\]")
+# Il nome deve avere esattamente la forma prevista dal contratto API:
+# chart_ + 8 caratteri esadecimali + .png (stessa regola del back end).
+CHART_NOTE_PATTERN = re.compile(r"\[Grafico salvato correttamente: (chart_[0-9a-f]{8}\.png)\]")
 
 
 @app.get("/")
@@ -66,7 +72,9 @@ def health_check():
 
 @app.post("/analyze", response_model=Answer)
 def analyze(payload: Question):
-    agent = state["agent"]
+    # Agente nuovo a ogni richiesta: namespace e copia di df isolati dalle altre richieste.
+    # Costruirlo costa pochi millisecondi vs i secondi della chiamata al modello.
+    agent = build_data_agent(state["df"], state["llm"], state["cleaning_summary"])
 
     try:
         risposta = agent.invoke({
@@ -86,7 +94,6 @@ def analyze(payload: Question):
         if getattr(msg, "type", None) == "tool":
             match = CHART_NOTE_PATTERN.search(msg.content or "")
             if match:
-                chart_path = match.group(1)  # es. "charts/chart_xxxx.png"
-                chart_url = "/" + chart_path
+                chart_url = "/charts/" + match.group(1)  # es. /charts/chart_ab12cd34.png
 
     return Answer(answer=answer_text, chart_url=chart_url)

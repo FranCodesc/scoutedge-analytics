@@ -2,7 +2,7 @@ import io
 import contextlib
 import ast
 import uuid
-import os
+from pathlib import Path
 
 import matplotlib
 matplotlib.use("Agg")  # backend non interattivo: necessario in un processo server, senza display
@@ -13,15 +13,24 @@ import pandas as pd
 from langchain_core.tools import tool
 from langchain.agents import create_agent
 
-CHARTS_DIR = "charts"
-os.makedirs(CHARTS_DIR, exist_ok=True)
+
+# Cartella dei grafici: percorso assoluto basato sulla posizione di questo file e non
+# sulla cartella da cui viene avviato uvicorn. Con un percorso relativo, avviare il
+# servizio da un'altra cartella farebbe salvare i PNG (e poi cercarli) nel posto sbagliato.
+CHARTS_DIR = Path(__file__).resolve().parent / "charts"
+CHARTS_DIR.mkdir(exist_ok=True) # crea cartella se manca
 
 
 def make_python_tool(df):
     """Costruisce il tool 'python_repl' per un dataframe specifico.
-    Lo stato (local_vars) e' creato una sola volta qui e condiviso tra tutte le chiamate
-    al tool, cosi' le variabili definite da una tool-call restano disponibili nelle successive."""
-    local_vars = {"df": df, "pd": pd, "plt": plt, "sns": sns}
+    Il namespace (con una COPIA di df) viene creato qui: ogni chiamata a questa funzione
+    produce quindi uno stato nuovo. build_data_agent la richiama a ogni richiesta, così le
+    variabili persistono tra le tool-call della stessa richiesta ma non passano alla successiva."""
+
+    # Un solo dizionario fa da globals e da locals di exec/eval. Con due dizionari separati
+    # le funzioni, le lambda e le list comprehension scritte dal modello (che hanno un proprio
+    # ambito e cercano i nomi nei globals) non vedrebbero 'df' e 'pd': NameError.
+    namespace = {"df": df.copy(), "pd": pd, "plt": plt, "sns": sns}
 
     @tool
     def python_repl(code: str) -> str:
@@ -41,20 +50,22 @@ def make_python_tool(df):
 
             with contextlib.redirect_stdout(output):
                 if body:
-                    exec(compile(ast.Module(body=body, type_ignores=[]), "<code>", "exec"), {}, local_vars)
+                    exec(compile(ast.Module(body=body, type_ignores=[]), "<code>", "exec"), namespace)
                 if last is not None:
                     if isinstance(last, ast.Expr):
-                        result = eval(compile(ast.Expression(last.value), "<code>", "eval"), {}, local_vars)
+                        result = eval(compile(ast.Expression(last.value), "<code>", "eval"), namespace)
                         if result is not None:
                             print(repr(result))
                     else:
-                        exec(compile(ast.Module(body=[last], type_ignores=[]), "<code>", "exec"), {}, local_vars)
+                        exec(compile(ast.Module(body=[last], type_ignores=[]), "<code>", "exec"), namespace)
 
                 if plt.get_fignums():
-                    filename = f"{CHARTS_DIR}/chart_{uuid.uuid4().hex[:8]}.png"
-                    plt.savefig(filename, bbox_inches="tight")
+                    # Solo il nome del file: nella nota per il modello non deve comparire
+                    # nessun percorso del disco (fuga di informazioni e romperebbe l'URL).
+                    filename = f"chart_{uuid.uuid4().hex[:8]}.png"
+                    plt.savefig(CHARTS_DIR / filename, bbox_inches="tight")
                     plt.close("all")
-                    chart_note = f"\n[Grafico salvato correttamente in: {filename}]"
+                    chart_note = f"\n[Grafico salvato correttamente: {filename}]"
         except Exception as e:
             plt.close("all")
             return f"Errore nell'esecuzione: {e}"
@@ -65,6 +76,8 @@ def make_python_tool(df):
 def build_data_agent(df, llm, cleaning_summary):
     """Costruisce un agente ReAct per l'analisi del dataframe 'df'.
     'cleaning_summary' è il testo che riassume le correzioni applicate ai dati.
+    Va richiamata a ogni richiesta (non una volta sola all'avvio): lo stato del
+    tool è isolato per richiesta.
     Restituisce l'agente pronto per .invoke()."""
 
     python_tool = make_python_tool(df)
