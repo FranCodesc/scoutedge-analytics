@@ -137,13 +137,20 @@ def build_data_agent(df, llm, cleaning_summary):
     # 2. Struttura dei dati: ogni riga è un'osservazione nel tempo, quindi un giocatore compare
     #    più volte e metriche come valore di mercato e rating cambiano.
     # 3. Chiave del giocatore: sempre 'player_id', mai 'player_name' (omonimie).
-    # 4. Stato "attuale": procedura esatta con ordinamento stabile (kind='stable'), valida anche
-    #    per massimi, minimi e classifiche su tutti i giocatori (bug emerso nella regressione D7:
-    #    "valore attuale più alto nel dataset" restituiva il massimo storico). Il criterio è
-    #    deterministico: a parità di data vince la riga registrata per ultima.
+    # 4. Periodo oppure stato "attuale". Prima si distingue: se la domanda indica un periodo
+    #    (stagione, anno, mese, intervallo di date), si filtra df sul periodo e si usano TUTTE le
+    #    sue osservazioni (regressione D7: "scout_rating medio nell'ultima stagione" veniva
+    #    calcolato sulle ultime osservazioni dei giocatori, 65.21, invece che su tutte le 405
+    #    della stagione, 65.11). Se invece si chiede lo stato attuale senza periodo, vale la
+    #    procedura esatta con ordinamento stabile (kind='stable'), anche per massimi, minimi e
+    #    classifiche su tutti i giocatori (bug D7: "valore attuale più alto nel dataset"
+    #    restituiva il massimo storico). Il criterio è deterministico: a parità di data vince
+    #    la riga registrata per ultima.
     # 5. Controllo D8: per giocatori specifici stampa tutte le osservazioni della data più
     #    recente e segnala i casi con più righe, con ordine fisso (prima il valore attuale,
     #    poi la segnalazione). Senza l'ordine fisso il modello a volte ometteva il valore.
+    #    La segnalazione si limita alle righe stampate dal controllo (tutte della stessa data):
+    #    in una prova su quattro della regressione D7 elencava l'intera storia del giocatore.
     # 6. Anti-allucinazione: se un'informazione non è tra le colonne, lo dice invece di
     #    rispondere con conoscenza generale.
     # 7. Valori categoriali: controlla con .unique() prima di filtrare (bug osservato:
@@ -163,7 +170,15 @@ all'altra nel tempo.
 
 Usa sempre 'player_id' come chiave univoca del giocatore (mai 'player_name', per rischio di omonimie).
 
-Se la domanda riguarda lo stato ATTUALE (parole come 'attuale', 'oggi', 'ora', 'ultimo', 'più recente'), sia di un
+Se la domanda indica un PERIODO (una stagione, un anno, un mese, un intervallo di date, oppure espressioni come
+'ultima stagione', 'nella 2024/25', 'quest'anno'), filtra prima df su quel periodo e usa TUTTE le osservazioni del
+periodo: in questo caso la procedura dello stato attuale descritta più sotto NON si applica. Per 'ultima stagione'
+usa df[df['season'] == df['season'].max()]. Per confrontare più stagioni raggruppa per 'season', sempre su tutte le
+osservazioni. Indica sempre quante osservazioni hai considerato. Un periodo e lo stato attuale sono cose diverse:
+lo scout_rating medio nell'ultima stagione è la media di tutte le osservazioni di quella stagione, non la media
+delle ultime osservazioni dei singoli giocatori.
+
+Se invece la domanda chiede lo stato ATTUALE senza indicare alcun periodo (parole come 'attuale', 'oggi', 'ora', 'ultimo', 'più recente'), sia di un
 singolo giocatore sia di un gruppo sia di TUTTI i giocatori (es. valore di mercato attuale, ultimo rating, il
 giocatore più prezioso oggi, classifiche o medie attuali), NON calcolare massimi, minimi o medie su tutte le righe
 di df: ogni giocatore ha molte osservazioni e il massimo storico non è il valore attuale. Parti SEMPRE da questo
@@ -184,6 +199,7 @@ Se per un giocatore compare più di una riga, la risposta deve avere sempre ques
 attuale, cioè quello dell'ultima riga registrata (quella che compare per ultima nell'output), come risposta alla
 domanda; (2) poi segnala che in quella data esistono più osservazioni dello stesso giocatore, indicando per ciascuna
 scout_name e il valore della metrica richiesta. Non omettere mai il punto (1).
+Nel punto (2) elenca SOLO le righe stampate dal controllo, che hanno tutte la stessa data: non elencare mai osservazioni di altre date e non riportare la storia del giocatore.
 
 Se una domanda richiede informazioni non presenti tra le colonne del dataframe, NON rispondere con
 conoscenza generale esterna: dichiara esplicitamente che il dataset non contiene quell'informazione,
