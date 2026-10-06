@@ -1,3 +1,21 @@
+"""Microservizio FastAPI del data agent di ScoutEdge Analytics.
+
+Espone tre cose:
+- GET /          controllo di stato (health check);
+- POST /analyze  riceve una domanda in linguaggio naturale, la fa analizzare all'agente
+                 (agent.py) e restituisce {answer, chart_url};
+- /charts        i grafici PNG generati, serviti come file statici.
+
+Al caricamento del servizio il CSV viene letto e pulito una sola volta (lifespan); l'agente
+invece si costruisce a ogni richiesta, così ogni domanda parte da uno stato pulito.
+
+Il front end non chiama mai questo servizio: parla solo con il back end Node, che inoltra le
+domande qui e converte chart_url in chartUrl secondo il contratto API.
+
+Avvio (con il venv attivo): da data_agent/ `uvicorn main:app --reload`, oppure dalla root
+del repo `uvicorn --app-dir data_agent main:app`. Ascolta solo su 127.0.0.1.
+"""
+
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -25,6 +43,12 @@ state = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Prepara le risorse all'avvio e le libera allo spegnimento.
+
+    Carica il CSV, lo pulisce con clean_scouting_data (che si ferma con un errore se i
+    controlli finali falliscono: meglio un avvio fallito che dati sbagliati) e conserva in
+    `state` dataframe pulito, modello e riepilogo delle correzioni.
+    """
     df_raw = pd.read_csv(BASE_DIR / ".." / "data" / "scouting_data.csv")
     df_clean, cleaning_report = clean_scouting_data(df_raw)
 
@@ -51,10 +75,14 @@ app.mount("/charts", StaticFiles(directory=CHARTS_DIR), name="charts")
 
 
 class Question(BaseModel):
+    """Corpo della richiesta di POST /analyze: la domanda dell'utente."""
     question: str
 
 
 class Answer(BaseModel):
+    """Corpo della risposta: il testo e, se è stato generato un grafico, il suo URL relativo
+    (es. /charts/chart_ab12cd34.png). chart_url è un campo interno: il back end lo converte
+    in chartUrl per il front end."""
     answer: str
     chart_url: str | None = None
 
@@ -66,11 +94,19 @@ CHART_NOTE_PATTERN = re.compile(r"\[Grafico salvato correttamente: (chart_[0-9a-
 
 @app.get("/")
 def health_check():
+    """Verifica che il servizio sia attivo (non controlla l'agente né il modello)."""
     return {"status": "ok"}
 
 
 @app.post("/analyze", response_model=Answer)
 def analyze(payload: Question):
+    """Fa analizzare la domanda all'agente e restituisce risposta e URL del grafico.
+
+    Flusso: costruisce un agente nuovo, lo invoca con la domanda, prende il testo
+    dell'ultimo messaggio come risposta e cerca nei messaggi del tool la nota che segnala
+    un grafico salvato. In caso di errore dell'agente risponde 502; il dettaglio contiene
+    il testo grezzo dell'eccezione, quindi il back end non deve inoltrarlo al browser.
+    """
     # Agente nuovo a ogni richiesta: namespace e copia di df isolati dalle altre richieste.
     # Costruirlo costa pochi millisecondi vs i secondi della chiamata al modello.
     agent = build_data_agent(state["df"], state["llm"], state["cleaning_summary"])
@@ -88,6 +124,8 @@ def analyze(payload: Question):
     answer_text = risposta["messages"][-1].content
 
     # cerchiamo tra i messaggi del tool se e' stato salvato un grafico in questa richiesta
+    # La nota arriva dal tool come testo: è l'unico canale con cui agent.py comunica il nome
+    # del file. Se in una richiesta si generano più grafici, vale l'ultimo.
     chart_url = None
     for msg in risposta["messages"]:
         if getattr(msg, "type", None) == "tool":

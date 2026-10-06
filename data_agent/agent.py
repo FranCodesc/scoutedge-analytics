@@ -1,3 +1,22 @@
+"""Agente di analisi dati di ScoutEdge Analytics (ReAct con un solo tool, `python_repl`).
+
+Il modulo costruisce l'agente che risponde alle domande sul dataset di scouting
+generando ed eseguendo codice pandas. Si compone di tre parti:
+
+1. CHARTS_DIR: la cartella (percorso assoluto) in cui vengono salvati i grafici PNG.
+2. make_python_tool(df): crea il tool `python_repl`, un piccolo interprete che esegue il
+   codice scritto dal modello su una copia del dataframe e salva in automatico i grafici.
+3. build_data_agent(df, llm, cleaning_summary): assembla l'agente con il suo system prompt,
+   che contiene le regole di analisi e il riepilogo delle correzioni applicate ai dati.
+
+main.py chiama build_data_agent a ogni richiesta: ogni domanda ha quindi uno stato
+pulito, senza variabili o filtri lasciati da richieste precedenti.
+
+Limite di sicurezza noto: il codice generato dal modello viene eseguito con exec/eval
+nel processo del servizio, senza sandbox. È accettabile solo in un contesto locale e
+didattico (vedi la sezione sulla sicurezza nella documentazione del progetto).
+"""
+
 import io
 import contextlib
 import ast
@@ -23,9 +42,15 @@ CHARTS_DIR.mkdir(exist_ok=True) # crea cartella se manca
 
 def make_python_tool(df):
     """Costruisce il tool 'python_repl' per un dataframe specifico.
+
     Il namespace (con una COPIA di df) viene creato qui: ogni chiamata a questa funzione
     produce quindi uno stato nuovo. build_data_agent la richiama a ogni richiesta, così le
-    variabili persistono tra le tool-call della stessa richiesta ma non passano alla successiva."""
+    variabili persistono tra le tool-call della stessa richiesta ma non passano alla successiva.
+
+    Il tool è un REPL "alla Jupyter": esegue il codice scritto dal modello, mostra il valore
+    dell'ultima espressione e, se il codice ha creato un grafico, lo salva in CHARTS_DIR.
+    Restituisce la funzione-tool (decorata con @tool) da passare a create_agent.
+    """
 
     # Un solo dizionario fa da globals e da locals di exec/eval. Con due dizionari separati
     # le funzioni, le lambda e le list comprehension scritte dal modello (che hanno un proprio
@@ -45,9 +70,16 @@ def make_python_tool(df):
         output = io.StringIO()
         chart_note = ""
         try:
+            # Il codice viene analizzato come albero sintattico (AST) invece di darlo
+            # direttamente a exec. Serve per separare l'ultima istruzione dalle altre: se è
+            # un'espressione (es. `df.shape`) se ne valuta e mostra il valore come fa un REPL,
+            # altrimenti il modello dovrebbe scrivere print() ogni volta. Se il codice è vuoto
+            # `tree.body` è vuoto: il segnaposto [None] evita l'errore di spacchettamento.
             tree = ast.parse(code)
             *body, last = tree.body if tree.body else [None]
 
+            # Tutto ciò che il codice stampa viene catturato in `output` invece di finire sul
+            # terminale del server: è il testo che il tool restituisce al modello.
             with contextlib.redirect_stdout(output):
                 if body:
                     exec(compile(ast.Module(body=body, type_ignores=[]), "<code>", "exec"), namespace)
@@ -66,6 +98,10 @@ def make_python_tool(df):
                     plt.savefig(CHARTS_DIR / filename, bbox_inches="tight")
                     plt.close("all")
                     chart_note = f"\n[Grafico salvato correttamente: {filename}]"
+
+        # L'errore non interrompe il servizio: viene restituito al modello come testo, così può
+        # leggerlo e correggere il codice al giro successivo (tipico del ciclo ReAct di auto-correzione).
+        # Le figure rimaste aperte si chiudono per non contaminare la richiesta successiva.
         except Exception as e:
             plt.close("all")
             return f"Errore nell'esecuzione: {e}"
@@ -75,13 +111,47 @@ def make_python_tool(df):
 
 def build_data_agent(df, llm, cleaning_summary):
     """Costruisce un agente ReAct per l'analisi del dataframe 'df'.
-    'cleaning_summary' è il testo che riassume le correzioni applicate ai dati.
+
+    Parametri:
+        df: dataframe già pulito (output di clean_scouting_data).
+        llm: modello di linguaggio (ChatOpenAI) usato dall'agente.
+        cleaning_summary: testo (da format_cleaning_report) che riassume le correzioni
+            applicate ai dati; viene inserito nel system prompt.
+
     Va richiamata a ogni richiesta (non una volta sola all'avvio): lo stato del
     tool è isolato per richiesta.
-    Restituisce l'agente pronto per .invoke()."""
+    Restituisce l'agente pronto per .invoke().
+    """
 
     python_tool = make_python_tool(df)
 
+    # System prompt: ogni sezione è nata per correggere un comportamento sbagliato osservato
+    # nei test, quindi l'ordine e la formulazione contano. Principio emerso dal lavoro sul
+    # controllo D8: le regole condizionali ("se... allora...") il modello non le esegue in
+    # modo affidabile, mentre le procedure con codice esatto da lanciare sempre e un ordine
+    # fisso della risposta sì. Per questo gli esempi di codice usano segnaposto espliciti
+    # (<...>) e non valori reali, che il modello potrebbe copiare.
+    #
+    # Sezioni, in ordine:
+    # 1. Colonne di 'df': evita che il modello inventi nomi di colonne.
+    # 2. Struttura dei dati: ogni riga è un'osservazione nel tempo, quindi un giocatore compare
+    #    più volte e metriche come valore di mercato e rating cambiano.
+    # 3. Chiave del giocatore: sempre 'player_id', mai 'player_name' (omonimie).
+    # 4. Stato "attuale": procedura esatta con ordinamento stabile (kind='stable'). Il criterio
+    #    è deterministico: a parità di data vince la riga registrata per ultima.
+    # 5. Controllo D8: per giocatori specifici stampa tutte le osservazioni della data più
+    #    recente e segnala i casi con più righe, con ordine fisso (prima il valore attuale,
+    #    poi la segnalazione). Senza l'ordine fisso il modello a volte ometteva il valore.
+    # 6. Anti-allucinazione: se un'informazione non è tra le colonne, lo dice invece di
+    #    rispondere con conoscenza generale.
+    # 7. Valori categoriali: controlla con .unique() prima di filtrare (bug osservato:
+    #    cercava 'Goalkeeper' invece di 'GK' e concludeva che i portieri non esistevano).
+    # 8. Anti-link: niente link o percorsi dell'immagine nel testo; il grafico viene
+    #    consegnato a parte da main.py tramite chart_url.
+    # 9. Riepilogo delle correzioni (D3): i numeri del cleaning non si possono ricostruire
+    #    dal dataframe già pulito, quindi stanno nel prompt, con la regola di usare solo quelli
+    #    e di dichiararne la base di calcolo.
+    # Le graffe di cleaning_summary e delle colonne sono sostituite da Python (f-string).
     system_prompt_text = f"""Colonne disponibili nel dataframe 'df': {list(df.columns)}
 
 Nota importante sulla struttura dei dati: ogni riga rappresenta una singola osservazione di scouting
