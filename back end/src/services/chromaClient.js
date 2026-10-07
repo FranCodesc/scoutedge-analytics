@@ -21,19 +21,33 @@ export const COLLECTION_NAME = "platform-handbook";
  *
  * @returns {ChromaClient} client pronto all'uso (nessuna connessione aperta
  *   finché non si chiama un metodo: è solo un wrapper HTTP senza stato)
- * @throws {Error} se CHROMA_URL manca o non è un URL valido
+ * @throws {Error} se CHROMA_URL manca o non è un URL http(s) valido
  */
 export function getChromaClient() {
   const rawUrl = process.env.CHROMA_URL;
   if (!rawUrl) {
     throw new Error(
-      "CHROMA_URL non è definita: aggiungila a .env (es. CHROMA_URL=http://localhost:8001)."
+      "CHROMA_URL non è definita: aggiungila a .env (es. CHROMA_URL=http://localhost:8001).",
     );
   }
 
-  // new URL() richiede il protocollo: "localhost:8001" verrebbe letto come
-  // protocollo "localhost:" e produrrebbe valori sbagliati senza errori.
-  const url = new URL(rawUrl);
+  // new URL() non fallisce con "localhost:8001": legge "localhost:" come
+  // protocollo e restituirebbe host e porta sbagliati senza alcun errore.
+  // Per questo si controllano esplicitamente protocollo e hostname.
+  // Con "localhost" (senza porta) new URL() lancia invece un TypeError:
+  // lo si intercetta per dare lo stesso messaggio chiaro in entrambi i casi.
+  // Il valore di CHROMA_URL non va nel messaggio: potrebbe contenere credenziali.
+  let url = null;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    // url resta null e si lancia l'errore qui sotto
+  }
+  if (!url || !["http:", "https:"].includes(url.protocol) || !url.hostname) {
+    throw new Error(
+      "CHROMA_URL deve iniziare con http:// o https:// e contenere un host (es. http://localhost:8001).",
+    );
+  }
 
   const ssl = url.protocol === "https:";
   // url.port è una stringa vuota se la porta è quella di default del protocollo.
