@@ -38,6 +38,15 @@ const NO_PASSAGES =
   "Nessun passaggio pertinente trovato nel manuale per questa ricerca.";
 
 /**
+ * Frase che il CODICE (non il modello) aggiunge alla domanda per il data
+ * agent quando l'utente ha chiesto un grafico. Definita in un solo punto: è
+ * ciò che rende la richiesta di grafico deterministica (v1.2). Con la v1.1,
+ * affidata al testo libero del modello, la richiesta spariva 6 volte su 6.
+ */
+export const CHART_REQUEST_SENTENCE =
+  "Genera anche un grafico adatto a mostrare il risultato.";
+
+/**
  * Applica le due soglie di rilevanza ai passaggi restituiti da ragService.
  * La distanza migliore è calcolata con Math.min, senza fidarsi dell'ordine.
  *
@@ -82,7 +91,9 @@ export function createTurnTools() {
         }
 
         const blocks = relevant.map((p, i) => {
-          const label = p.subsection ? `${p.section} › ${p.subsection}` : p.section;
+          const label = p.subsection
+            ? `${p.section} › ${p.subsection}`
+            : p.section;
           return `[${i + 1}] ${label}\n${p.text}`;
         });
         return `Passaggi pertinenti del manuale:\n\n${blocks.join("\n\n")}`;
@@ -108,17 +119,26 @@ export function createTurnTools() {
   );
 
   const analyzeDataTool = tool(
-    async ({ question }) => {
+    async ({ question, chart }) => {
       try {
-        const result = await analyzeWithDataAgent(question);
+        // La richiesta di grafico la aggiunge il codice, non il modello.
+        const fullQuestion = chart
+          ? `${question.trim()} ${CHART_REQUEST_SENTENCE}`
+          : question;
+        const result = await analyzeWithDataAgent(fullQuestion);
 
-        // Vale l'ultimo grafico non nullo tra le chiamate del turno.
+        // Vale l'ultimo grafico non nullo tra le chiamate del turno, anche se
+        // `chart` era false: se il servizio ne ha generato uno, si mostra.
         if (result.chartUrl) chartUrl = result.chartUrl;
 
+        // Il risultato dichiara sempre l'esito del grafico, così il modello
+        // non lo annuncia dalla memoria (v1.2).
         let text = `Risultato dell'analisi:\n${result.answer}`;
         if (result.chartUrl) {
           text +=
             "\n(È stato generato un grafico, mostrato all'utente sotto la risposta.)";
+        } else if (chart) {
+          text += "\n(Il grafico richiesto non è stato generato.)";
         }
         return text;
       } catch (error) {
@@ -140,7 +160,12 @@ export function createTurnTools() {
         question: z
           .string()
           .describe(
-            "Domanda completa e autonoma in italiano: riferimenti alla conversazione sostituiti da valori espliciti, espressioni temporali dell'utente conservate, richiesta di grafico esplicita se serve.",
+            "Domanda completa e autonoma in italiano: riferimenti alla conversazione sostituiti da valori espliciti, espressioni temporali della domanda corrente conservate.",
+          ),
+        chart: z
+          .boolean()
+          .describe(
+            "true se l'utente ha chiesto un grafico, un diagramma o una visualizzazione; altrimenti false.",
           ),
       }),
     },
@@ -164,7 +189,9 @@ export function createTurnTools() {
 
     const target = toolsByName[name];
     if (!target) {
-      console.error(`[tool] strumento sconosciuto richiesto dal modello: ${name}`);
+      console.error(
+        `[tool] strumento sconosciuto richiesto dal modello: ${name}`,
+      );
       return "ERRORE_STRUMENTO: strumento non disponibile.";
     }
 
