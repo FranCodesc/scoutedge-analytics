@@ -107,7 +107,7 @@ export function createTurnTools() {
     {
       name: "search_handbook",
       description:
-        "Cerca nel manuale interno di ScoutEdge Analytics: piani di abbonamento, metodologia di scouting e scout_rating, criteri di valutazione per ruolo, glossario delle metriche, policy dati e privacy, procedura di data cleaning, SLA ed escalation, FAQ del Client Success. Usalo per regole, procedure, definizioni e metodologia, mai per numeri sui dati.",
+        "Cerca nel manuale interno di ScoutEdge Analytics: piani di abbonamento, metodologia di scouting e di calcolo del rating, criteri di valutazione per ruolo, glossario delle metriche, policy dati e privacy, procedura di data cleaning, SLA ed escalation, FAQ del Client Success. Usalo per regole, procedure, definizioni e metodologia, mai per numeri sui dati.",
       schema: z.object({
         query: z
           .string()
