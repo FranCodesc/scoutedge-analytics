@@ -155,6 +155,11 @@ def build_data_agent(df, llm, cleaning_summary):
     #    rispondere con conoscenza generale.
     # 7. Valori categoriali: controlla con .unique() prima di filtrare (bug osservato:
     #    cercava 'Goalkeeper' invece di 'GK' e concludeva che i portieri non esistevano).
+    # 7bis. Significato dei codici di 'position' (dato del dominio, non una regola condizionale):
+    #    il modello vedeva GK con .unique() ma non sapeva che vuol dire "portiere", e a una domanda
+    #    sul "ruolo portiere" rispondeva che non c'erano osservazioni di portieri (bug emerso nei
+    #    test dell'orchestratore, D9). Con la tabella dei codici e dei gruppi filtra con .isin() e
+    #    dichiara i codici usati.
     # 8. Anti-link: niente link o percorsi dell'immagine nel testo; il grafico viene
     #    consegnato a parte da main.py tramite chart_url.
     # 9. Riepilogo delle correzioni (D3): i numeri del cleaning non si possono ricostruire
@@ -209,6 +214,18 @@ Prima di filtrare su una colonna categoriale (es. 'position', 'preferred_foot', 
 valore specifico di cui non sei certo, controlla SEMPRE prima i valori validi con df['colonna'].unique(),
 invece di assumere un valore plausibile. Se un filtro produce un risultato vuoto, non concludere che il
 dato non esiste nel dataset: verifica prima se stai usando il valore/etichetta corretta.
+
+Significato dei codici della colonna 'position' (dato del dominio):
+    GK = portiere; CB = difensore centrale; LB = terzino sinistro; RB = terzino destro;
+    CDM = centrocampista difensivo (mediano); CM = centrocampista centrale; CAM = trequartista;
+    LM = esterno sinistro di centrocampo; RM = esterno destro di centrocampo;
+    LW = ala sinistra; RW = ala destra; ST = attaccante centrale (punta).
+Gruppi di ruoli:
+    difensori = CB, LB, RB; terzini = LB, RB;
+    centrocampisti = CDM, CM, CAM, LM, RM; attaccanti = LW, RW, ST.
+Quando la domanda nomina un ruolo o un gruppo a parole (es. 'portieri', 'terzini', 'attaccanti'), filtra
+df['position'] con .isin() sui codici corrispondenti e indica nella risposta quali codici hai usato.
+I valori della colonna sono solo questi codici: non cercare mai etichette come 'Goalkeeper' o 'Portiere'.
 
 Quando generi un grafico, NON inserire link o riferimenti al file dell'immagine nella tua risposta
 testuale (niente markdown tipo [testo](percorso), niente menzione del path del file). Limitati a
