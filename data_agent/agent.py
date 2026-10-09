@@ -39,6 +39,12 @@ from langchain.agents import create_agent
 CHARTS_DIR = Path(__file__).resolve().parent / "charts"
 CHARTS_DIR.mkdir(exist_ok=True) # crea cartella se manca
 
+# Limite (in caratteri) del testo che il tool restituisce al modello. Dopo l'introduzione della
+# stampa completa dei DataFrame (D10) un risultato grande potrebbe far crescere molto i token:
+# oltre il limite il testo viene troncato e in fondo si aggiunge una nota fissa. La nota
+# esplicita serve a evitare che il modello riempia i vuoti inventando i dati mancanti.
+MAX_TOOL_OUTPUT = 6000
+
 
 def make_python_tool(df):
     """Costruisce il tool 'python_repl' per un dataframe specifico.
@@ -80,7 +86,12 @@ def make_python_tool(df):
 
             # Tutto ciò che il codice stampa viene catturato in `output` invece di finire sul
             # terminale del server: è il testo che il tool restituisce al modello.
-            with contextlib.redirect_stdout(output):
+            # Il contesto pandas mostra TUTTE le colonne (D10). Con la rappresentazione
+            # abbreviata di default, le 35 colonne di df finivano in parte nei "...": il modello
+            # non vedeva `market_value_eur` e inventava il valore (diagnosi D10: "valore attuale
+            # più alto" → 15.000.000 o 5.000.000 invece di 18.680.000). La larghezza di 250
+            # caratteri evita che le righe vengano spezzate male nell'output.
+            with contextlib.redirect_stdout(output), pd.option_context("display.max_columns", None, "display.width", 250):
                 if body:
                     exec(compile(ast.Module(body=body, type_ignores=[]), "<code>", "exec"), namespace)
                 if last is not None:
@@ -105,7 +116,13 @@ def make_python_tool(df):
         except Exception as e:
             plt.close("all")
             return f"Errore nell'esecuzione: {e}"
-        return (output.getvalue() or "Codice eseguito senza output.") + chart_note
+        # Troncamento dell'output (D10): la nota del grafico viene aggiunta DOPO, così resta
+        # sempre in fondo e main.py la trova anche quando il testo è stato accorciato.
+        testo = output.getvalue() or "Codice eseguito senza output."
+        if len(testo) > MAX_TOOL_OUTPUT:
+            testo = (testo[:MAX_TOOL_OUTPUT]
+                     + "\n[Output troncato: stampa solo le righe e le colonne necessarie alla risposta.]")
+        return testo + chart_note
     return python_repl
 
 
@@ -146,11 +163,31 @@ def build_data_agent(df, llm, cleaning_summary):
     #    classifiche su tutti i giocatori (bug D7: "valore attuale più alto nel dataset"
     #    restituiva il massimo storico). Il criterio è deterministico: a parità di data vince
     #    la riga registrata per ultima.
-    # 5. Controllo D8: per giocatori specifici stampa tutte le osservazioni della data più
-    #    recente e segnala i casi con più righe, con ordine fisso (prima il valore attuale,
-    #    poi la segnalazione). Senza l'ordine fisso il modello a volte ometteva il valore.
-    #    La segnalazione si limita alle righe stampate dal controllo (tutte della stessa data):
-    #    in una prova su quattro della regressione D7 elencava l'intera storia del giocatore.
+    # 4bis. "Osservazione più recente" (D10). La domanda dei 3 difensori centrali "nell'osservazione
+    #    più recente" sbagliava circa 2 volte su 10: il modello la leggeva come la sola data più
+    #    recente del dataset (poche righe, un solo difensore) invece dell'ultima osservazione di
+    #    ogni giocatore. Un tentativo scartato: un dataframe precalcolato (df_attuale), per le
+    #    regressioni che ha causato (il controllo D8 girava sul dataframe sbagliato, le domande su
+    #    un periodo venivano calcolate sullo stato attuale). La definizione esplicita nel prompt
+    #    resta: sui difensori centrali non ha dato un miglioramento misurabile (6/8 con la frase,
+    #    8/8 senza, campioni troppo piccoli). L'errore su "valore di mercato attuale più alto"
+    #    (5.000.000 o 15.000.000 invece di 18.680.000) non dipendeva dalla frase ma dall'output
+    #    abbreviato del tool, che nascondeva la colonna del valore (vedi python_repl). L'errore
+    #    intermittente sui difensori centrali resta un limite noto.
+    # 5. Controllo D8: per giocatori specifici stampa le osservazioni della data più recente e
+    #    un elenco "GIOCATORI DA SEGNALARE" calcolato dal codice (gli id con più righe in quella
+    #    data). Ordine fisso della risposta: prima il valore attuale, poi, solo per gli id
+    #    dell'elenco, la segnalazione. Storia dei difetti: senza ordine fisso il modello ometteva
+    #    il valore; senza limite elencava la storia del giocatore; con la regola condizionale
+    #    "se compare più di una riga" la segnalazione veniva scritta anche con una riga sola
+    #    (giocatore 33), quindi la decisione è passata dal modello al codice. Le righe del
+    #    controllo restano sullo stesso sottoinsieme: confrontare serie con indici diversi dava
+    #    ValueError e il modello riscriveva il controllo a modo suo. L'elenco usa .tolist() perché
+    #    con numpy 2 stamperebbe [np.int64(70)] invece di [70]. La riga "GIOCATORI DA SEGNALARE"
+    #    serve solo al modello: senza il divieto la riportava nella risposta, a volte anche
+    #    quando il controllo non era stato eseguito.
+    #    Limite noto: con più giocatori nella stessa domanda (es. 33 e 70) l'affidabilità è
+    #    ridotta (0 corrette su 3 nei test D10). Si consiglia una domanda per giocatore.
     # 6. Anti-allucinazione: se un'informazione non è tra le colonne, lo dice invece di
     #    rispondere con conoscenza generale.
     # 7. Valori categoriali: controlla con .unique() prima di filtrare (bug osservato:
@@ -193,18 +230,24 @@ solo dopo, su questo sottoinsieme:
 L'ordinamento stabile (kind='stable') è obbligatorio: se un giocatore ha più osservazioni nella stessa data,
 vince la riga che compare per ultima nel dataframe, cioè l'ultima registrata. Non cambiare questo criterio.
 Poi applica eventuali filtri o ordinamenti richiesti dalla domanda su questo sottoinsieme.
+'Osservazione più recente' significa sempre l'ultima osservazione di OGNI giocatore (il sottoinsieme qui sopra, una riga per giocatore), mai le sole righe della data più recente del dataset.
 
 Quando la domanda riguarda lo stato attuale di uno o più giocatori specifici (indicati per 'player_id'), dopo aver
 ottenuto la riga più recente esegui SEMPRE anche questo controllo nello stesso blocco di codice, sostituendo l'elenco
 degli id (ids) con quelli richiesti:
     ids = [<lista degli player_id richiesti>]
-    ultimo = df[df['player_id'].isin(ids)].groupby('player_id')['observation_date'].transform('max')
-    print(df[df['player_id'].isin(ids) & (df['observation_date'] == ultimo)][['player_id', 'observation_date', 'scout_name', 'scout_rating']])
-Se per un giocatore compare più di una riga, la risposta deve avere sempre questo ordine: (1) prima indica il valore
-attuale, cioè quello dell'ultima riga registrata (quella che compare per ultima nell'output), come risposta alla
-domanda; (2) poi segnala che in quella data esistono più osservazioni dello stesso giocatore, indicando per ciascuna
-scout_name e il valore della metrica richiesta. Non omettere mai il punto (1).
+    righe = df[df['player_id'].isin(ids)]
+    righe = righe[righe['observation_date'] == righe.groupby('player_id')['observation_date'].transform('max')]
+    print(righe[['player_id', 'observation_date', 'scout_name', 'scout_rating']])
+    conteggi = righe.groupby('player_id').size()
+    print('GIOCATORI DA SEGNALARE:', conteggi[conteggi > 1].index.tolist())
+La risposta ha sempre questo ordine. (1) Prima il valore attuale di ogni giocatore richiesto, cioè quello della sua
+ultima riga registrata (quella che compare per ultima nell'output), come risposta alla domanda. Non omettere mai il
+punto (1). (2) Poi leggi la riga "GIOCATORI DA SEGNALARE": se la lista è vuota ([]), non parlare di osservazioni
+multiple. Per ogni player_id presente nella lista, e solo per quelli, segnala che in quella data esistono più
+osservazioni dello stesso giocatore, indicando per ciascuna scout_name e il valore della metrica richiesta.
 Nel punto (2) elenca SOLO le righe stampate dal controllo, che hanno tutte la stessa data: non elencare mai osservazioni di altre date e non riportare la storia del giocatore.
+La riga "GIOCATORI DA SEGNALARE" serve solo a te per decidere il punto (2): non riportarla mai nella risposta.
 
 Se una domanda richiede informazioni non presenti tra le colonne del dataframe, NON rispondere con
 conoscenza generale esterna: dichiara esplicitamente che il dataset non contiene quell'informazione,
