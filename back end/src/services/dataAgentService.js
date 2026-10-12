@@ -8,6 +8,12 @@ const DATA_AGENT_TIMEOUT_MS = 90_000;
  */
 const CHART_URL_PATTERN = /^\/charts\/chart_[0-9a-f]{8}\.png$/;
 
+/** Timeout per scaricare un PNG da FastAPI: è un file locale, bastano pochi secondi. */
+const CHART_FETCH_TIMEOUT_MS = 10_000;
+
+/** Stesso formato del path del grafico, ma per il solo nome del file (usato da fetchChart). */
+export const CHART_FILENAME_PATTERN = /^chart_[0-9a-f]{8}\.png$/;
+
 /**
  * Errore del data agent con un codice leggibile da chi chiama.
  *
@@ -155,5 +161,61 @@ export async function analyzeWithDataAgent(
       "UNREACHABLE",
       "Il servizio di analisi dati non è al momento raggiungibile.",
     );
+  }
+}
+
+/**
+ * Scarica da FastAPI il PNG di un grafico, per il proxy GET /charts/:filename.
+ *
+ * Sta in questo servizio perché tutte le chiamate a FastAPI devono passare da
+ * qui: stessa base URL, stessa classificazione degli errori.
+ *
+ * @param {string} filename nome del file, es. "chart_ab12cd34.png"
+ * @returns {Promise<Buffer|null>} il PNG, oppure null se FastAPI risponde 404
+ * @throws {DataAgentError} TIMEOUT, UNREACHABLE o UPSTREAM_ERROR (il 404 NON è
+ *   un errore: è l'esito normale per un grafico che non esiste)
+ */
+export async function fetchChart(filename) {
+  // La route valida già il nome. Lo ricontrollo perché finisce dentro un URL:
+  // se un domani qualcuno chiamasse questa funzione senza passare dalla route,
+  // un nome come "../x" non deve mai arrivare a FastAPI.
+  if (!CHART_FILENAME_PATTERN.test(filename)) {
+    throw new Error("fetchChart: nome del file non valido.");
+  }
+
+  const baseUrl = getDataAgentBaseUrl();
+
+  try {
+    const response = await fetch(`${baseUrl}/charts/${filename}`, {
+      signal: AbortSignal.timeout(CHART_FETCH_TIMEOUT_MS),
+    });
+
+    if (response.status === 404) return null;
+
+    if (!response.ok) {
+      console.error(`[dataAgentService] grafico ${filename}: risposta ${response.status}`);
+      throw new DataAgentError("UPSTREAM_ERROR", "Il grafico non è al momento disponibile.");
+    }
+
+    // Controllo il tipo: se FastAPI rispondesse 200 con altro (es. una pagina
+    // d'errore), non vogliamo inoltrarlo al browser come se fosse un PNG.
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.startsWith("image/png")) {
+      console.error(`[dataAgentService] grafico ${filename}: content-type inatteso (${contentType})`);
+      throw new DataAgentError("UPSTREAM_ERROR", "Il grafico non è al momento disponibile.");
+    }
+
+    return Buffer.from(await response.arrayBuffer());
+  } catch (error) {
+    if (error instanceof DataAgentError) throw error;
+
+    if (error.name === "TimeoutError") {
+      console.error(`[dataAgentService] timeout nel recupero di ${filename}`);
+      throw new DataAgentError("TIMEOUT", "Il grafico non è al momento disponibile.");
+    }
+
+    // Qui non c'è un SyntaxError da gestire (il corpo non è JSON): il resto è rete.
+    console.error("[dataAgentService] data agent non raggiungibile:", error.cause?.code ?? error.message);
+    throw new DataAgentError("UNREACHABLE", "Il grafico non è al momento disponibile.");
   }
 }

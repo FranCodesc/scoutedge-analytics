@@ -2,8 +2,9 @@
  * System prompt dell'orchestratore (B6/B7, DESIGN_ORCHESTRATORE.md §5, v1.4).
  *
  * Il testo è vincolante: non si modifica qui in autonomia. Se un test di
- * routing fallisce, il caso va portato all'Orchestratore e, dopo ogni
- * modifica approvata, vanno ripetuti anche i test di confine.
+ * routing fallisce, la modifica va prima decisa e registrata in
+ * DESIGN_ORCHESTRATORE.md e, dopo ogni modifica, vanno ripetuti anche i
+ * test di confine.
  *
  * Perché il prompt è fatto così, sezione per sezione:
  *
