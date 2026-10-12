@@ -26,6 +26,8 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")  # backend non interattivo: necessario in un processo server, senza display
 import matplotlib.pyplot as plt
+from unittest import mock
+from matplotlib.figure import Figure
 import seaborn as sns
 import pandas as pd
 
@@ -91,7 +93,22 @@ def make_python_tool(df):
             # non vedeva `market_value_eur` e inventava il valore (diagnosi D10: "valore attuale
             # più alto" → 15.000.000 o 5.000.000 invece di 18.680.000). La larghezza di 250
             # caratteri evita che le righe vengano spezzate male nell'output.
-            with contextlib.redirect_stdout(output), pd.option_context("display.max_columns", None, "display.width", 250):
+            #
+            # D11: il salvataggio dei grafici è riservato al tool. Se il codice del modello
+            # chiama plt.savefig/fig.savefig scrive un PNG fuori da charts/ (con un nome suo),
+            # e se poi chiama plt.close() la figura sparisce prima che il tool la veda: nessun
+            # grafico e nessuna nota (grafico mancante in modo intermittente). Per tutta
+            # l'esecuzione del codice del modello queste funzioni non fanno nulla, così ogni
+            # figura creata finisce in charts/ con il nome chart_xxxxxxxx.png. Non è una
+            # sandbox: il modello può comunque scrivere file in altri modi (limite di
+            # sicurezza noto del python_repl).
+            _nulla = lambda *args, **kwargs: None
+            with contextlib.redirect_stdout(output), \
+                 pd.option_context("display.max_columns", None, "display.width", 250), \
+                 mock.patch.object(plt, "savefig", _nulla), \
+                 mock.patch.object(plt, "close", _nulla), \
+                 mock.patch.object(plt, "show", _nulla), \
+                 mock.patch.object(Figure, "savefig", _nulla):
                 if body:
                     exec(compile(ast.Module(body=body, type_ignores=[]), "<code>", "exec"), namespace)
                 if last is not None:
@@ -102,13 +119,14 @@ def make_python_tool(df):
                     else:
                         exec(compile(ast.Module(body=[last], type_ignores=[]), "<code>", "exec"), namespace)
 
-                if plt.get_fignums():
-                    # Solo il nome del file: nella nota per il modello non deve comparire
-                    # nessun percorso del disco (fuga di informazioni e romperebbe l'URL).
-                    filename = f"chart_{uuid.uuid4().hex[:8]}.png"
-                    plt.savefig(CHARTS_DIR / filename, bbox_inches="tight")
-                    plt.close("all")
-                    chart_note = f"\n[Grafico salvato correttamente: {filename}]"
+            # Qui le funzioni originali sono ripristinate: il salvataggio è quello del tool.
+            if plt.get_fignums():
+                # Solo il nome del file: nella nota per il modello non deve comparire
+                # nessun percorso del disco (fuga di informazioni e romperebbe l'URL).
+                filename = f"chart_{uuid.uuid4().hex[:8]}.png"
+                plt.savefig(CHARTS_DIR / filename, bbox_inches="tight")
+                plt.close("all")
+                chart_note = f"\n[Grafico salvato correttamente: {filename}]"
 
         # L'errore non interrompe il servizio: viene restituito al modello come testo, così può
         # leggerlo e correggere il codice al giro successivo (tipico del ciclo ReAct di auto-correzione).
