@@ -5,7 +5,7 @@
  * - PARTE A: controlli automatici del contratto (CONTRATTO_API.md v1.0), con
  *   esito OK/KO e exit code 1 se c'è almeno un KO. Ogni errore è controllato
  *   anche nella forma: { error: { code, message } } e nient'altro.
- * - PARTE B: le domande del design (DESIGN_ORCHESTRATORE.md v1.4 §6) attraverso
+ * - PARTE B: le domande del design (DESIGN_ORCHESTRATORE.md v1.5 §6) attraverso
  *   la route. Qui NON c'è un esito automatico: l'LLM è probabilistico e il
  *   contenuto si valuta a mano contro la tabella "Valori attesi" di
  *   STATO_PROGETTO.md. Per ogni domanda stampa toolsUsed, sources, chartUrl,
@@ -295,7 +295,7 @@ async function partAConversation() {
 }
 
 /**
- * Domande della PARTE B (design v1.4 §6). Ogni caso parte da una sessione
+ * Domande della PARTE B (design v1.5 §6). Ogni caso parte da una sessione
  * nuova; "turns" con più messaggi sono una conversazione vera sulla stessa
  * sessione (test 5 e 5b); "runs" ripete il caso (4b: tre volte, perché la
  * parte sui dati è un limite noto con frequenza da registrare).
@@ -321,6 +321,10 @@ const PART_B = [
   {
     label: "5b",
     turns: ["Qual è lo scout_rating medio nell'ultima stagione?", "E per i portieri?"],
+  },
+  {
+    label: "5c",
+    turns: ["Qual è lo scout_rating medio nella stagione 2024/25?", "E in quella precedente?"],
   },
   { label: "6", turns: ["Qual è la capitale della Francia?"] },
   {

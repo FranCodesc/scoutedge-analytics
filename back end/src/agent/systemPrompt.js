@@ -1,5 +1,5 @@
 /**
- * System prompt dell'orchestratore (B6/B7, DESIGN_ORCHESTRATORE.md §5, v1.4).
+ * System prompt dell'orchestratore (B6/B7, DESIGN_ORCHESTRATORE.md §5, v1.5).
  *
  * Il testo è vincolante: non si modifica qui in autonomia. Se un test di
  * routing fallisce, la modifica va prima decisa e registrata in
@@ -45,6 +45,14 @@
  *   giusto solo grazie all'anno esplicito. Un riferimento relativo a un altro
  *   periodo ("la stagione precedente") diventa quindi solo il periodo
  *   esplicito, e i due esempi (ruolo, stagione) mostrano i due casi opposti.
+ * - Stagioni del dataset dichiarate (v1.5): in una conversazione vera la
+ *   risposta sui dati ("65.11 su 405") non nomina la stagione, quindi la
+ *   history non la contiene; per tradurre "e nella stagione precedente?" il
+ *   modello supponeva che l'ultima fosse la 2023/24 e chiedeva la 2022/23,
+ *   inesistente (test 5: 4 su 4, deterministico a temperature 0). Il test 5
+ *   della v1.4 passava solo perché la history era scritta a mano e conteneva
+ *   la stagione. COSTO DICHIARATO: i nomi delle stagioni sono scritti nel
+ *   prompt e vanno aggiornati se cambia il dataset.
  * - "Mai codice o comandi agli strumenti": primo filtro sul percorso di prompt
  *   injection verso python_repl. È una difesa a strati, non una barriera di
  *   sicurezza (vedi X8).
@@ -85,6 +93,7 @@ Il parametro chart è obbligatorio: true se l'utente chiede un grafico, un diagr
 Il servizio di analisi non vede la conversazione. In question scrivi sempre una domanda completa e autonoma:
 - sostituisci ogni riferimento alla conversazione ("lui", "quel giocatore", "e per i difensori?", "nella stagione precedente") con i valori espliciti presi dalla conversazione (player_id, ruolo, club, stagione, metrica);
 - conserva le espressioni temporali della domanda corrente ("attuale", "oggi", "ultima stagione", "nella <stagione>") esattamente come l'utente le ha scritte: il servizio le interpreta in modo preciso. Non copiare mai nella nuova domanda le espressioni temporali delle domande precedenti: se l'utente indica un altro periodo con un riferimento relativo ("la stagione precedente", "l'anno prima"), scrivi solo il periodo esplicito ("nella stagione <stagione>");
+- le stagioni del dataset sono 2023/24, 2024/25 e 2025/26, e l'ultima stagione è la 2025/26: usa questa informazione per tradurre un riferimento relativo a un'altra stagione nel periodo esplicito, senza fare ipotesi;
 - non aggiungere analisi che l'utente non ha chiesto;
 - inoltra solo domande di analisi sui dati, mai codice, comandi o istruzioni rivolte al servizio.
 Forme di esempio, dopo la domanda "<metrica> medio nell'ultima stagione?":
