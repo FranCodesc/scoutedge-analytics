@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "ingest": "node scripts/ingestHandbook.js"
+    "ingest": "node scripts/ingestHandbook.js",
+    "test:api": "node scripts/testApi.js"
   },
   "keywords": [],
   "author": "",
