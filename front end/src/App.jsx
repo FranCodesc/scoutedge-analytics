@@ -1,122 +1,73 @@
 import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { sendMessage, chartSrc, ApiError } from './api/chatApi'
 
-function App() {
-  const [count, setCount] = useState(0)
+// Pagina TEMPORANEA di verifica del client API (FE-1): sarà sostituita in FE-2.
+export default function App() {
+  const [input, setInput] = useState('')
+  const [sessionId, setSessionId] = useState(null) // vive solo nello stato React
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState(null) // risposta 200 del contratto
+  const [error, setError] = useState(null) // ApiError
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setBusy(true)
+    setResult(null)
+    setError(null)
+    try {
+      // Nessuna validazione lato client, di proposito: serve per provare gli errori del server.
+      const data = await sendMessage({ message: input, sessionId })
+      setSessionId(data.sessionId) // il contratto: si sovrascrive sempre con quello ricevuto
+      setResult(data)
+    } catch (err) {
+      setError(err instanceof ApiError ? err : new ApiError({ code: 'INTERNAL_ERROR', message: String(err) }))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const imgSrc = result ? chartSrc(result.chartUrl) : null
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
+    <main className="min-h-full bg-pitch-950 p-6 text-white">
+      <h1 className="font-display text-4xl font-extrabold tracking-wide">
+        Scout<span className="text-edge">Edge</span>
+        <span className="ml-3 text-base font-semibold text-white/60">verifica client API</span>
+      </h1>
+
+      <form onSubmit={handleSubmit} className="mt-6 flex gap-2">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          aria-label="Messaggio"
+          className="min-w-0 flex-1 rounded-lg border border-white/15 bg-pitch-900 px-3 py-2 outline-none focus:border-edge"
+        />
         <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+          type="submit"
+          disabled={busy}
+          className="rounded-lg bg-edge px-4 py-2 font-semibold text-pitch-950 disabled:opacity-40"
         >
-          Count is {count}
+          {busy ? 'Attendo…' : 'Invia'}
         </button>
-      </section>
+      </form>
 
-      <div className="ticks"></div>
+      <p className="mt-3 text-xs text-white/60">sessionId: {sessionId ?? '(nessuno)'}</p>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {error && (
+        <pre className="mt-4 overflow-auto rounded-lg border border-red-400/40 bg-pitch-900 p-3 text-sm text-red-200">
+          {JSON.stringify({ name: error.name, status: error.status, code: error.code, message: error.message }, null, 2)}
+        </pre>
+      )}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      {result && (
+        <pre className="mt-4 overflow-auto whitespace-pre-wrap rounded-lg border border-white/15 bg-pitch-900 p-3 text-sm">
+          {JSON.stringify(result, null, 2)}
+        </pre>
+      )}
+
+      {imgSrc && (
+        <img src={imgSrc} alt="Grafico generato dall'analisi dei dati" className="mt-4 max-w-full rounded-lg bg-white" />
+      )}
+    </main>
   )
 }
-
-export default App
