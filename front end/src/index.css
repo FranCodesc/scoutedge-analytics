@@ -1,6 +1,9 @@
 /* ── Tailwind v4 ─────────────────────────────────────────── */
 @import "tailwindcss";
 
+/* Stili tipografici per il Markdown delle risposte (classe "prose") */
+@plugin "@tailwindcss/typography";
+
 /* ── Tema ScoutEdge ──────────────────────────────────────────
    In Tailwind v4 i token si dichiarano qui, in @theme: ognuno genera le
    utility corrispondenti (bg-pitch-950, text-edge, font-display, animate-fade-up…).
@@ -17,51 +20,83 @@
   /* Animazioni: ogni --animate-* diventa una classe animate-* */
   --animate-ball-bounce: ball-bounce 1.1s cubic-bezier(0.3, 0, 0.4, 1) infinite;
   --animate-ball-spin: ball-spin 1.1s linear infinite;
-  --animate-shadow-pulse: shadow-pulse 1.1s cubic-bezier(0.3, 0, 0.4, 1) infinite;
+  --animate-shadow-pulse: shadow-pulse 1.1s cubic-bezier(0.3, 0, 0.4, 1)
+    infinite;
   --animate-fade-up: fade-up 0.6s ease-out both;
   --animate-send: send-up 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
-  --animate-draw: draw 1.2s ease-out both;
 
   @keyframes ball-bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-56px); }
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-56px);
+    }
   }
   @keyframes ball-spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
   @keyframes shadow-pulse {
-    0%, 100% { transform: scale(1); opacity: 0.45; }
-    50% { transform: scale(0.55); opacity: 0.15; }
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.45;
+    }
+    50% {
+      transform: scale(0.55);
+      opacity: 0.15;
+    }
   }
   @keyframes send-up {
-    from { opacity: 0; transform: translateY(56px) scale(0.85); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  @keyframes draw {
-    from { stroke-dashoffset: 1; }
-    to { stroke-dashoffset: 0; }
+    from {
+      opacity: 0;
+      transform: translateY(56px) scale(0.85);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
   @keyframes fade-up {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
 /* ── Accessibilità ───────────────────────────────────────────
    Chi ha attivato "riduci animazioni" nel sistema non vede movimento continuo. */
 @media (prefers-reduced-motion: reduce) {
-  .animate-ball-bounce, .animate-ball-spin, .animate-shadow-pulse, .animate-send { animation: none; }
-  .animate-draw { animation: none; stroke-dasharray: none; }
+  .animate-ball-bounce,
+  .animate-ball-spin,
+  .animate-shadow-pulse,
+  .animate-send {
+    animation: none;
+  }
 }
 
 /* ── Stili di base ───────────────────────────────────────────
    Altezza piena per il layout a tutto schermo, sfondo coerente col tema
    (evita lampi bianchi durante il caricamento) e comportamento touch su mobile. */
-html, body, #root { height: 100%; }
+html,
+body,
+#root {
+  height: 100%;
+}
 body {
   background: var(--color-pitch-950);
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
 }
-button { touch-action: manipulation; }
+button {
+  touch-action: manipulation;
+}

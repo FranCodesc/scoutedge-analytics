@@ -2,18 +2,150 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <meta name="theme-color" content="#04130c" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <!-- Barlow Condensed per i titoli; senza rete si usa il font di sistema -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <title>ScoutEdge Analytics — Assistente</title>
+    <!-- CSS critico: il preloader statico si vede subito, prima che React e Tailwind siano caricati -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #04130c;
+      }
+      #boot {
+        position: fixed;
+        inset: 0;
+        height: 100dvh;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 40px;
+        padding: 0 24px;
+        background: #04130c;
+        color: #fff;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+      }
+      #boot .stage {
+        height: 128px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+      }
+      #boot .ball {
+        animation: boot-bounce 1.1s cubic-bezier(0.3, 0, 0.4, 1) infinite;
+      }
+      #boot .emoji {
+        display: inline-block;
+        font-size: 60px;
+        line-height: 1;
+        user-select: none;
+        animation: boot-spin 1.1s linear infinite;
+      }
+      #boot .shadow {
+        margin-top: 4px;
+        height: 8px;
+        width: 56px;
+        border-radius: 9999px;
+        background: rgba(0, 0, 0, 0.6);
+        animation: boot-shadow 1.1s cubic-bezier(0.3, 0, 0.4, 1) infinite;
+      }
+      #boot h1 {
+        margin: 0;
+        font-family: "Barlow Condensed", ui-sans-serif, system-ui, sans-serif;
+        font-size: 60px;
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: 0.025em;
+      }
+      #boot h1 span {
+        color: #3dff8b;
+      }
+      #boot .bar {
+        width: 100%;
+        max-width: 320px;
+        height: 6px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.1);
+        overflow: hidden;
+      }
+      #boot .bar i {
+        display: block;
+        height: 100%;
+        width: 100%;
+        border-radius: 9999px;
+        background: #3dff8b;
+        transform: scaleX(0.08);
+        transform-origin: left;
+      }
+      @keyframes boot-bounce {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-56px);
+        }
+      }
+      @keyframes boot-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes boot-shadow {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 0.45;
+        }
+        50% {
+          transform: scale(0.55);
+          opacity: 0.15;
+        }
+      }
+      @media (min-width: 640px) {
+        #boot h1 {
+          font-size: 72px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot .ball,
+        #boot .emoji,
+        #boot .shadow {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Sostituito da React appena l'app è pronta -->
+      <div id="boot" role="status" aria-label="Caricamento ScoutEdge">
+        <div class="stage">
+          <div class="ball">
+            <span class="emoji" aria-hidden="true">⚽</span>
+          </div>
+          <div class="shadow"></div>
+        </div>
+        <h1>Scout<span>Edge</span></h1>
+        <div class="bar"><i></i></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

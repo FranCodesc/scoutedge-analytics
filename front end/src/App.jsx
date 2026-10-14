@@ -1,73 +1,25 @@
-import { useState } from 'react'
-import { sendMessage, chartSrc, ApiError } from './api/chatApi'
+import { useEffect, useState } from "react";
+import Chat from "./components/Chat";
+import Preloader from "./components/Preloader";
 
-// Pagina TEMPORANEA di verifica del client API (FE-1): sarà sostituita in FE-2.
+// Durata del preloader (scelta di progetto: 3 secondi). È una scelta grafica, non
+// legata a un caricamento reale: l'app è già pronta, il preloader è parte dell'identità.
+const PRELOADER_MS = 3000;
+
 export default function App() {
-  const [input, setInput] = useState('')
-  const [sessionId, setSessionId] = useState(null) // vive solo nello stato React
-  const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState(null) // risposta 200 del contratto
-  const [error, setError] = useState(null) // ApiError
+  const [loading, setLoading] = useState(true);
 
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setBusy(true)
-    setResult(null)
-    setError(null)
-    try {
-      // Nessuna validazione lato client, di proposito: serve per provare gli errori del server.
-      const data = await sendMessage({ message: input, sessionId })
-      setSessionId(data.sessionId) // il contratto: si sovrascrive sempre con quello ricevuto
-      setResult(data)
-    } catch (err) {
-      setError(err instanceof ApiError ? err : new ApiError({ code: 'INTERNAL_ERROR', message: String(err) }))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const imgSrc = result ? chartSrc(result.chartUrl) : null
+  // Il timer spegne `loading`; il cleanup lo annulla se il componente si smonta
+  // (in sviluppo StrictMode monta due volte: il primo timer viene annullato).
+  useEffect(() => {
+    const id = setTimeout(() => setLoading(false), PRELOADER_MS);
+    return () => clearTimeout(id);
+  }, []);
 
   return (
-    <main className="min-h-full bg-pitch-950 p-6 text-white">
-      <h1 className="font-display text-4xl font-extrabold tracking-wide">
-        Scout<span className="text-edge">Edge</span>
-        <span className="ml-3 text-base font-semibold text-white/60">verifica client API</span>
-      </h1>
-
-      <form onSubmit={handleSubmit} className="mt-6 flex gap-2">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          aria-label="Messaggio"
-          className="min-w-0 flex-1 rounded-lg border border-white/15 bg-pitch-900 px-3 py-2 outline-none focus:border-edge"
-        />
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-lg bg-edge px-4 py-2 font-semibold text-pitch-950 disabled:opacity-40"
-        >
-          {busy ? 'Attendo…' : 'Invia'}
-        </button>
-      </form>
-
-      <p className="mt-3 text-xs text-white/60">sessionId: {sessionId ?? '(nessuno)'}</p>
-
-      {error && (
-        <pre className="mt-4 overflow-auto rounded-lg border border-red-400/40 bg-pitch-900 p-3 text-sm text-red-200">
-          {JSON.stringify({ name: error.name, status: error.status, code: error.code, message: error.message }, null, 2)}
-        </pre>
-      )}
-
-      {result && (
-        <pre className="mt-4 overflow-auto whitespace-pre-wrap rounded-lg border border-white/15 bg-pitch-900 p-3 text-sm">
-          {JSON.stringify(result, null, 2)}
-        </pre>
-      )}
-
-      {imgSrc && (
-        <img src={imgSrc} alt="Grafico generato dall'analisi dei dati" className="mt-4 max-w-full rounded-lg bg-white" />
-      )}
-    </main>
-  )
+    <>
+      <Chat />
+      <Preloader loading={loading} />
+    </>
+  );
 }
