@@ -1,5 +1,5 @@
 /**
- * POST /api/chat (CONTRATTO_API.md v1.0, DESIGN_ORCHESTRATORE.md v1.4 §2-§3).
+ * POST /api/chat (docs/CONTRATTO_API.md v1.0, docs/DESIGN_ORCHESTRATORE.md v1.5 §2-§3).
  *
  * Flusso: validazione → sessione + lucchetto → orchestratore con timeout →
  * risposta. Gli errori previsti sono HttpError, che il middleware di errore

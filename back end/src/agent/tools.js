@@ -1,5 +1,5 @@
 /**
- * Strumenti dell'orchestratore (B7, DESIGN_ORCHESTRATORE.md §4):
+ * Strumenti dell'orchestratore (B7, docs/DESIGN_ORCHESTRATORE.md §4):
  * `search_handbook` (RAG sul manuale) e `analyze_data` (data agent Python).
  *
  * Stato per turno, senza stato globale: `createTurnTools()` va chiamata UNA

@@ -1,0 +1,143 @@
+# Test di ScoutEdge Analytics
+
+Come verificare che il sistema funzioni e quali risultati aspettarsi. Il contratto delle API è in [CONTRATTO_API.md](CONTRATTO_API.md), le domande di verifica dell'orchestratore in [DESIGN_ORCHESTRATORE.md](DESIGN_ORCHESTRATORE.md) (sezione 6).
+
+I test distinguono due tipi di verifica:
+
+- **Automatica**: forma delle risposte, codici di errore, sessioni, catena dei grafici. L'esito è OK o KO.
+- **A mano**: il contenuto delle risposte dell'LLM. Il modello è probabilistico, quindi i numeri e le scelte degli strumenti si confrontano con la tabella [Valori attesi](#valori-attesi).
+
+## Prerequisiti
+
+Tutti i servizi avviati, nell'ordine indicato nel README: Chroma (con il manuale già indicizzato), data agent (porta 8000) e back end (porta 3001). Le richieste dei test chiamano OpenAI, quindi hanno un costo e richiedono la chiave configurata nei file `.env`.
+
+## Test automatici dell'API
+
+Da `back end/`:
+
+```bash
+npm run test:api                    # parte A + parte B
+npm run test:api -- --solo-a        # solo la parte A (contratto)
+REPLY_CHARS=1500 npm run test:api   # estratti più lunghi nella parte B
+BASE_URL=http://localhost:3001 npm run test:api   # per cambiare indirizzo
+```
+
+### Parte A: contratto (23 controlli)
+
+Ogni controllo stampa `OK` o `KO`. Se almeno uno è `KO`, lo script termina con codice di uscita 1. Gli errori sono verificati anche nella forma: il corpo deve contenere solo `{ error: { code, message } }`.
+
+| Gruppo | Cosa verifica |
+|---|---|
+| a | `GET /` risponde `200 { status: "ok" }` |
+| b | `POST /api/chat` con body non valido risponde 400 `INVALID_REQUEST`: `message` vuoto, di soli spazi, assente o di 2001 caratteri; `sessionId` non UUID o `null`; body array; JSON malformato (8 casi) |
+| c | Body oltre 10 kb → 413 `PAYLOAD_TOO_LARGE` |
+| d | Rotta inesistente → 404 `NOT_FOUND` |
+| e | `GET /charts/...` con nome non valido e con path traversal codificato → 400; grafico inesistente → 404 (richiede il data agent acceso) |
+| f | Prima domanda senza `sessionId` → 200, `newSession: true`, tutti i campi del contratto con i tipi giusti |
+| g | Stessa sessione → `newSession: false` e stesso id; UUID v4 valido ma sconosciuto → 200, `newSession: true` e id diverso (non è un errore) |
+| h | Domanda con grafico → `chartUrl` nella forma `/charts/chart_<8 esadecimali>.png`, poi `GET` su quel path → 200 `image/png` |
+| i | Due richieste parallele sulla stessa sessione → una 200 e una 409 `SESSION_BUSY` |
+
+Esito atteso: **23 OK, 0 KO**.
+
+### Parte B: domande del design (da valutare a mano)
+
+Senza `--solo-a`, dopo la parte A lo script pone le domande della sezione 6 del design attraverso la route. Per ognuna stampa gli strumenti usati (`toolsUsed`), le sezioni del manuale (`sources`), il `chartUrl`, la durata e un estratto della risposta. Non c'è un esito automatico. Si confronta con i [Valori attesi](#valori-attesi).
+
+- I test 5, 5b e 5c sono conversazioni vere sulla stessa sessione.
+- Il 4b si ripete tre volte, perché la parte sui dati ha un [limite noto](#limiti-noti-del-data-agent).
+- Per il test 9 si controlla anche, nel log del back end, che gli argomenti passati agli strumenti non contengano codice.
+
+## Verifiche manuali
+
+Non sono nello script perché richiedono di spegnere servizi o di modificare temporaneamente il codice.
+
+**1. Path traversal sui grafici.** Con `--path-as-is` curl non normalizza il percorso:
+
+```bash
+curl -i --path-as-is "http://localhost:3001/charts/../../etc/passwd"
+curl -i --path-as-is "http://localhost:3001/charts/%2e%2e/%2e%2e/etc/passwd"
+```
+
+Atteso: `404 NOT_FOUND` con il messaggio "Risorsa non trovata.": il percorso non corrisponde a nessuna rotta e non viene letto nessun file dal disco. La variante con `%2F` (già nella parte automatica) risponde invece 400.
+
+**2. Timeout e sessione occupata.** In `back end/src/routes/chat.js` abbassa temporaneamente `CHAT_TIMEOUT_MS` (per esempio a `3_000`), riavvia il back end e pone una domanda che usa il data agent. Atteso:
+
+1. la risposta è `504 TIMEOUT`;
+2. una nuova richiesta sulla stessa sessione, subito dopo, risponde `409 SESSION_BUSY`, perché l'elaborazione del primo turno non è ancora finita;
+3. a lavoro concluso, una nuova richiesta sulla stessa sessione risponde 200, e il turno scaduto non compare nella conversazione.
+
+Ripristina poi il valore originale (`120_000`).
+
+**3. Data agent spento** (test 7). Ferma il data agent e chiedi "Quanti giocatori ci sono nel dataset?". Atteso: risposta 200 con `toolsUsed: ["analyze_data"]`, una dichiarazione che il servizio non è disponibile e **nessun numero**.
+
+**4. Chroma spento** (test 8). Ferma il container (`docker stop chroma-scoutedge`) e pone la domanda sullo SLA per priorità alta. Atteso: risposta 200 con `toolsUsed: ["search_handbook"]`, dichiarazione di indisponibilità e **nessun contenuto del manuale inventato**. Riavvia poi con `docker start chroma-scoutedge`.
+
+**5. Grafico con data agent spento.** Con un `chartUrl` ottenuto in precedenza, ferma il data agent e richiedi `GET /charts/<nome>.png`. Atteso: `500 INTERNAL_ERROR` con il messaggio "Il grafico non è al momento disponibile."
+
+## Valori attesi
+
+Valori calcolati sul dataset dopo la pulizia (1185 righe, 130 giocatori).
+
+| Domanda | Atteso |
+|---|---|
+| Quanti giocatori ci sono nel dataset? | 130 |
+| Quali correzioni avete applicato ai dati? | 1208 → 1185 righe; 23 duplicati (13 + 10); club da 74 a 25 grafie; nazionalità da 45 a 24; 5 casi di osservazioni nello stesso giorno (giocatori 10, 33, 60, 70, 74) |
+| Valore di mercato attuale più alto | 18.680.000 €, giocatore 5 (Sato Jun), Fiume Rosso AC (27/04/2026) |
+| Valore di mercato massimo storico (richiesto esplicitamente) | 19.102.000 €, giocatore 5 (09/03/2025) |
+| 10 giocatori con il valore di mercato attuale più alto | 5 Sato Jun 18.680.000 € · 43 Thiago Nahuel Lucas Ezequiel Mendez 13.560.000 · 76 Bulunç Müslum Kısakürek Aslan 13.423.000 · 38 Benjamin Dorn 12.890.000 · 63 Francisco Lobo 12.714.000 · 9 Mr James Cox 11.746.000 · 93 Yoshida Tomoya 11.631.000 · 24 Demetrio Vazquez Amor 11.168.000 · 31 Bernard Labbé 10.792.000 · 128 Puk van der Wal-Ghoerle 10.747.000. L'undicesimo è il giocatore 89 (Zachary Rice, 10.691.000) |
+| Scout_rating medio nell'ultima stagione | 65.11 su 405 osservazioni (2025/26). **65.21 è sbagliato**: è la media dello stato attuale (130 righe) |
+| Andamento dello scout_rating medio per stagione | 2023/24 66.59 (380) · 2024/25 66.18 (400) · 2025/26 65.11 (405) |
+| Conversazione: ultima stagione → "e nella stagione precedente?" | 65.11 su 405 → 2024/25, 66.18 su 400 |
+| Conversazione: stagione 2024/25 → "e in quella precedente?" | 66.18 su 400 → 2023/24, 66.59 su 380 |
+| Valore di mercato medio sull'osservazione più recente di ogni giocatore | 6.887.985 € su 130 righe. Su tutte le 1185 righe sarebbe 7.156.158 €: valore sbagliato |
+| Rating attuale del giocatore 70 | 66 (Davide Russo, 28/11/2025), con la segnalazione delle due osservazioni della stessa data (Marini 57, Russo 66). È l'unico giocatore con più osservazioni nella sua data più recente |
+| Rating attuale dei giocatori 33 / 10 / 60 | 80 (Valeria Costa, 30/03/2026) / 74 (Davide Russo, 20/03/2026) / 50 (Antonio Greco, 31/12/2025), senza segnalazioni |
+| Scout_rating medio per ruolo nell'ultima stagione | GK 68.91 (46) · CB 62.34 (41) · terzini LB+RB 63.53 (86) · difensori CB+LB+RB 63.15 (127) · attaccanti LW+RW+ST 63.93 (76) · centrocampisti CDM+CM+CAM+LM+RM 66.16 (156) |
+| 3 CB con il duels_won_pct attuale più alto | giocatore 120 (Pereira) 72.0 · 122 (Balaguer) 67.9 · 6 (Ito Yuta) 64.1 (12 CB in totale) |
+| Valore medio per club (osservazione più recente) | 25 club, nessun doppione di grafia |
+| Righe dei portieri (GK) | 131 |
+| RAG: tempo di prima risposta per priorità alta | 2 ore lavorative (risoluzione target 8 ore), sezione 7.1 del manuale |
+| RAG: tempo di prima risposta per priorità media | 8 ore lavorative, sezione 7.1 |
+| RAG: escalation se lo SLA non è rispettato | Team Lead di Client Success, entro 4 ore lavorative, sezione 7.3 |
+
+## Distanze di retrieval
+
+Distanze coseno dei primi 4 passaggi, misurate sul manuale indicizzato (18 chunk). Sono la base della soglia di rilevanza: un passaggio è tenuto se la distanza è ≤ 0.60 **e** ≤ distanza migliore + 0.12.
+
+| Domanda | Risultati (id → distanza) |
+|---|---|
+| SLA per priorità alta | `sec-7` 0.364 · `sec-8-q3` 0.550 · `sec-2` 0.627 · `sec-8-q2` 0.692 |
+| Come funziona lo scout_rating | `sec-3-1` 0.293 · `sec-8-q2` 0.336 · `sec-8-q1` 0.388 · `sec-3-4` 0.451 |
+| Privacy dei dati | `sec-5` 0.491 · `sec-6` 0.578 · `sec-1` 0.656 · `sec-7` 0.658 |
+| Correzioni applicate ai dati | `sec-6` 0.458 · `sec-8-q5` 0.510 · `sec-4` 0.589 · `sec-8-q1` 0.616 |
+| Confronto di rating tra ruoli diversi | `sec-8-q2` 0.392 · `sec-3-3` 0.402 · `sec-3-1` 0.442 · `sec-4` 0.457 |
+| Fuori ambito ("capitale della Francia") | tutti tra 0.893 e 0.938 |
+
+## Limiti noti del data agent
+
+Il data agent è un LLM che scrive ed esegue codice: alcune domande hanno quindi un'affidabilità inferiore alla media. Sono limiti dichiarati, non errori da inseguire nei test.
+
+- **"I 3 CB con il duels_won_pct più alto nell'osservazione più recente"**: il risultato varia da un giro all'altro (da 1 su 5 a circa 7 su 10 nelle prove). L'errore è sempre lo stesso: compare solo Pereira. Con "attuale" al posto di "nell'osservazione più recente" i test hanno dato 10 su 10; la demo usa questa formulazione.
+- **Più giocatori specifici nella stessa richiesta** (per esempio il 33 e il 70): affidabilità ridotta (0 su 3 nelle prove).
+- Le risposte non dichiarano i codici di ruolo usati nei filtri (0 su 8), anche se i filtri sono corretti.
+- Il CDM è conteggiato tra i centrocampisti. Il manuale (§3.3) lo valuta "come un difensore aggiunto", ma questo riguarda le metriche, non il gruppo di ruolo.
+- "Esterni" e "laterali" non sono mappati su un ruolo (termine ambiguo): ci si aspetta un chiarimento o i codici dichiarati.
+- L'output dello strumento è limitato a 6000 caratteri e a 60 righe.
+- Un solo grafico per esecuzione.
+- Alcune date del CSV possono diventare valori mancanti in fase di lettura.
+
+Un'ulteriore limitazione, comune a tutto il sistema, è che il numero di campioni di ogni prova è piccolo (2–8): differenze di poco conto tra un giro e l'altro sono rumore.
+
+## Domande end-to-end da provare dall'interfaccia
+
+Elenco di partenza per la prova manuale dalla chat (<http://localhost:5173>), con i riferimenti ai valori attesi sopra. Le domande da 1 a 3 sono quelle adatte a una dimostrazione.
+
+1. *Qual è il tempo di prima risposta per una richiesta ad alta priorità?* → manuale, sezione 7; etichetta `📄 Handbook`; "2 ore lavorative".
+2. *Mostrami un grafico con i 10 giocatori dal valore di mercato attuale più alto.* → dati e grafico; il primo è il giocatore 5 (Sato Jun), 18.680.000 €.
+3. *Secondo la metodologia, quali metriche contano di più per i difensori centrali? Poi mostrami i 3 CB con il duels_won_pct attuale più alto.* → entrambi gli strumenti, prima il manuale poi i dati; Pereira 72.0, Balaguer 67.9, Ito Yuta 64.1.
+4. Conversazione: *Qual è lo scout_rating medio nell'ultima stagione?* → *E nella stagione precedente?* → 65.11 su 405, poi 66.18 su 400.
+5. *Quali correzioni avete applicato ai dati?* → numeri della riga corrispondente nei valori attesi.
+6. *Qual è il rating attuale del giocatore 70?* → 66 con la segnalazione delle due osservazioni.
+7. *Qual è la capitale della Francia?* → nessuno strumento, risposta che delimita l'ambito.
+8. *Ciao!* → risposta breve, nessuno strumento.

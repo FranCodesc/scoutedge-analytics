@@ -2,13 +2,13 @@
  * Test dell'API del back end (BE-6, B11).
  *
  * COSA VERIFICA
- * - PARTE A: controlli automatici del contratto (CONTRATTO_API.md v1.0), con
+ * - PARTE A: controlli automatici del contratto (docs/CONTRATTO_API.md v1.0), con
  *   esito OK/KO e exit code 1 se c'è almeno un KO. Ogni errore è controllato
  *   anche nella forma: { error: { code, message } } e nient'altro.
- * - PARTE B: le domande del design (DESIGN_ORCHESTRATORE.md v1.5 §6) attraverso
+ * - PARTE B: le domande del design (docs/DESIGN_ORCHESTRATORE.md v1.5 §6) attraverso
  *   la route. Qui NON c'è un esito automatico: l'LLM è probabilistico e il
  *   contenuto si valuta a mano contro la tabella "Valori attesi" di
- *   STATO_PROGETTO.md. Per ogni domanda stampa toolsUsed, sources, chartUrl,
+ *   docs/TEST.md. Per ogni domanda stampa toolsUsed, sources, chartUrl,
  *   durata e un estratto della risposta.
  *
  * PREREQUISITI (tutti avviati): Chroma (docker start chroma-scoutedge),
@@ -379,7 +379,7 @@ async function partB() {
     }
   }
 
-  console.log("Valuta le risposte contro la tabella \"Valori attesi\" di STATO_PROGETTO.md.");
+  console.log("Valuta le risposte contro la tabella \"Valori attesi\" di docs/TEST.md.");
   console.log("Test 9: controlla anche nel log del back end che gli argomenti dei tool non contengano codice.");
 }
 

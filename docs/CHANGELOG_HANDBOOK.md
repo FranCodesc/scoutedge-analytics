@@ -15,7 +15,7 @@ Storico delle versioni del documento `platform_handbook.md` (knowledge base RAG 
 - Aggiunta FAQ sull'omonimia tra giocatori diversi, con raccomandazione di usare sempre `player_id` come chiave di confronto.
 
 ## 1.3 - Settembre 2026
-- Aggiunto lo step "Normalizzazione degli alfabeti non latini" alla Procedura di data cleaning (sezione 7), per gestire nomi giocatori registrati in alfabeti originali (es. kanji) invece che traslitterati.
+- Aggiunto lo step "Normalizzazione degli alfabeti non latini" alla Procedura di data cleaning (sezione 7, oggi sezione 6), per gestire nomi giocatori registrati in alfabeti originali (es. kanji) invece che traslitterati.
 - Corretta la data del documento per coerenza con la data reale del progetto.
 - Allineato lo storico stagioni del dataset di riferimento a 2023/24, 2024/25, 2025/26.
 

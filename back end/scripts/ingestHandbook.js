@@ -38,7 +38,7 @@ function stripTrailingSeparator(text) {
 }
 
 /**
- * Divide l'handbook in chunk secondo la strategia decisa in STATO_PROGETTO:
+ * Divide l'handbook in chunk con una strategia mista:
  * intestazione esclusa; sezioni intere, tranne §3 (per "###") e §8 (per
  * domanda). Ogni chunk inizia con il titolo della sezione (e della
  * sottosezione o domanda), così l'embedding conserva il contesto: un

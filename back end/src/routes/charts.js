@@ -1,5 +1,5 @@
 /**
- * GET /charts/:filename (CONTRATTO_API.md): proxy verso il data agent.
+ * GET /charts/:filename (docs/CONTRATTO_API.md): proxy verso il data agent.
  *
  * Il browser parla solo con il back end, quindi i PNG generati da FastAPI
  * passano da qui. La route non legge mai file dal disco: il nome ricevuto non

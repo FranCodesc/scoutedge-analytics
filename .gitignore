@@ -20,3 +20,6 @@ back end/chroma_data/
 
 # Grafici generati dai test del data agent (rigenerabili automaticamente)
 data_agent/charts/*.png
+# Solo in locale: materiale del corso e impostazioni personali dell'editor
+progetto-finale-brief.md
+.vscode/

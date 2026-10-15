@@ -1,5 +1,5 @@
 /**
- * Formato unico degli errori HTTP (CONTRATTO_API.md, sezione "Errori"):
+ * Formato unico degli errori HTTP (docs/CONTRATTO_API.md, sezione "Errori"):
  *   { "error": { "code": "INVALID_REQUEST", "message": "..." } }
  *
  * Il message è in italiano e mostrabile all'utente. Qui non finiscono mai
