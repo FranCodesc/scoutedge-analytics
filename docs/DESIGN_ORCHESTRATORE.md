@@ -1,6 +1,6 @@
 # Design dell'orchestratore — ScoutEdge Analytics
 
-**Versione:** 1.5 — 2026-10-12 — **Stato:** approvato
+**Versione:** 1.5 — 2026-10-12 (testo della nota del grafico aggiornato il 2026-10-16) — **Stato:** approvato
 
 > Documento di riferimento per l'orchestratore del back end. Ogni modifica incrementa la versione e viene annotata nello storico. Se l'implementazione richiede di discostarsi dal design (per esempio un test fallisce e serve cambiare il prompt), si aggiorna prima il design e poi il codice.
 

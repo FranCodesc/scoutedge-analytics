@@ -82,10 +82,10 @@ Valori calcolati sul dataset dopo la pulizia (1185 righe, 130 giocatori).
 | Domanda | Atteso |
 |---|---|
 | Quanti giocatori ci sono nel dataset? | 130 |
-| Quali correzioni avete applicato ai dati? | 1208 → 1185 righe; 23 duplicati (13 + 10); club da 74 a 25 grafie; nazionalità da 45 a 24; 5 casi di osservazioni nello stesso giorno (giocatori 10, 33, 60, 70, 74) |
+| Quali correzioni avete applicato ai dati? | 1208 → 1185 righe; 23 duplicati (13 + 10); club da 74 a 25 grafie; nazionalità da 45 a 24; 5 casi di osservazioni nello stesso giorno (giocatori 10, 33, 60, 70, 74); titoli e qualifiche tolti dai nomi di 12 giocatori (113 righe) |
 | Valore di mercato attuale più alto | 18.680.000 €, giocatore 5 (Sato Jun), Fiume Rosso AC (27/04/2026) |
 | Valore di mercato massimo storico (richiesto esplicitamente) | 19.102.000 €, giocatore 5 (09/03/2025) |
-| 10 giocatori con il valore di mercato attuale più alto | 5 Sato Jun 18.680.000 € · 43 Thiago Nahuel Lucas Ezequiel Mendez 13.560.000 · 76 Bulunç Müslum Kısakürek Aslan 13.423.000 · 38 Benjamin Dorn 12.890.000 · 63 Francisco Lobo 12.714.000 · 9 Mr James Cox 11.746.000 · 93 Yoshida Tomoya 11.631.000 · 24 Demetrio Vazquez Amor 11.168.000 · 31 Bernard Labbé 10.792.000 · 128 Puk van der Wal-Ghoerle 10.747.000. L'undicesimo è il giocatore 89 (Zachary Rice, 10.691.000) |
+| 10 giocatori con il valore di mercato attuale più alto | 5 Sato Jun 18.680.000 € · 43 Thiago Nahuel Lucas Ezequiel Mendez 13.560.000 · 76 Bulunç Müslum Kısakürek Aslan 13.423.000 · 38 Benjamin Dorn 12.890.000 · 63 Francisco Lobo 12.714.000 · 9 James Cox 11.746.000 · 93 Yoshida Tomoya 11.631.000 · 24 Demetrio Vazquez Amor 11.168.000 · 31 Bernard Labbé 10.792.000 · 128 Puk van der Wal-Ghoerle 10.747.000. L'undicesimo è il giocatore 89 (Zachary Rice, 10.691.000) |
 | Scout_rating medio nell'ultima stagione | 65.11 su 405 osservazioni (2025/26). **65.21 è sbagliato**: è la media dello stato attuale (130 righe) |
 | Andamento dello scout_rating medio per stagione | 2023/24 66.59 (380) · 2024/25 66.18 (400) · 2025/26 65.11 (405) |
 | Conversazione: ultima stagione → "e nella stagione precedente?" | 65.11 su 405 → 2024/25, 66.18 su 400 |
@@ -100,17 +100,18 @@ Valori calcolati sul dataset dopo la pulizia (1185 righe, 130 giocatori).
 | RAG: tempo di prima risposta per priorità alta | 2 ore lavorative (risoluzione target 8 ore), sezione 7.1 del manuale |
 | RAG: tempo di prima risposta per priorità media | 8 ore lavorative, sezione 7.1 |
 | RAG: escalation se lo SLA non è rispettato | Team Lead di Client Success, entro 4 ore lavorative, sezione 7.3 |
+| RAG: Qual è la procedura di data cleaning del team? | 7 passaggi; il quinto è la rimozione di titoli e qualifiche dai nomi dei giocatori, sezione 6 del manuale |
 
 ## Distanze di retrieval
 
-Distanze coseno dei primi 4 passaggi, misurate sul manuale indicizzato (18 chunk). Sono la base della soglia di rilevanza: un passaggio è tenuto se la distanza è ≤ 0.60 **e** ≤ distanza migliore + 0.12.
+Distanze coseno dei primi 4 passaggi, misurate sul manuale indicizzato (18 chunk). Sono la base della soglia di rilevanza: un passaggio è tenuto se la distanza è ≤ 0.60 **e** ≤ distanza migliore + 0.12. Le righe «Privacy dei dati» e «Correzioni applicate ai dati», che contengono la sezione 6, sono state rimisurate sul manuale 1.7; le altre sono state misurate sul manuale 1.6 (le sezioni coinvolte non sono cambiate).
 
 | Domanda | Risultati (id → distanza) |
 |---|---|
 | SLA per priorità alta | `sec-7` 0.364 · `sec-8-q3` 0.550 · `sec-2` 0.627 · `sec-8-q2` 0.692 |
 | Come funziona lo scout_rating | `sec-3-1` 0.293 · `sec-8-q2` 0.336 · `sec-8-q1` 0.388 · `sec-3-4` 0.451 |
-| Privacy dei dati | `sec-5` 0.491 · `sec-6` 0.578 · `sec-1` 0.656 · `sec-7` 0.658 |
-| Correzioni applicate ai dati | `sec-6` 0.458 · `sec-8-q5` 0.510 · `sec-4` 0.589 · `sec-8-q1` 0.616 |
+| Privacy dei dati | `sec-5` 0.491 · `sec-6` 0.584 · `sec-1` 0.663 · `sec-7` 0.665 |
+| Correzioni applicate ai dati | `sec-6` 0.462 · `sec-8-q5` 0.501 · `sec-4` 0.584 · `sec-8-q1` 0.605 |
 | Confronto di rating tra ruoli diversi | `sec-8-q2` 0.392 · `sec-3-3` 0.402 · `sec-3-1` 0.442 · `sec-4` 0.457 |
 | Fuori ambito ("capitale della Francia") | tutti tra 0.893 e 0.938 |
 
@@ -123,6 +124,7 @@ Il data agent è un LLM che scrive ed esegue codice: alcune domande hanno quindi
 - Le risposte non dichiarano i codici di ruolo usati nei filtri (0 su 8), anche se i filtri sono corretti.
 - Il CDM è conteggiato tra i centrocampisti. Il manuale (§3.3) lo valuta "come un difensore aggiunto", ma questo riguarda le metriche, non il gruppo di ruolo.
 - "Esterni" e "laterali" non sono mappati su un ruolo (termine ambiguo): ci si aspetta un chiarimento o i codici dichiarati.
+- **Formato degli importi nel testo**: gli importi nelle risposte sono scritti nella notazione anglosassone (18,680,000: virgola per le migliaia, punto per i decimali), mentre gli assi dei grafici usano il punto per le migliaia (17.500.000). Una regola sul formato nel prompt del data agent è stata provata e tolta perché peggiorava risposte che non c'entravano con gli importi.
 - L'output dello strumento è limitato a 6000 caratteri e a 60 righe.
 - Un solo grafico per esecuzione.
 - Alcune date del CSV possono diventare valori mancanti in fase di lettura.
@@ -134,7 +136,7 @@ Un'ulteriore limitazione, comune a tutto il sistema, è che il numero di campion
 Elenco di partenza per la prova manuale dalla chat (<http://localhost:5173>), con i riferimenti ai valori attesi sopra. Le domande da 1 a 3 sono quelle adatte a una dimostrazione.
 
 1. *Qual è il tempo di prima risposta per una richiesta ad alta priorità?* → manuale, sezione 7; etichetta `📄 Handbook`; "2 ore lavorative".
-2. *Mostrami un grafico con i 10 giocatori dal valore di mercato attuale più alto.* → dati e grafico; il primo è il giocatore 5 (Sato Jun), 18.680.000 €.
+2. *Quali sono i 10 giocatori con il valore di mercato attuale più alto? Mostrami anche un grafico.* → solo dati, etichetta `📊 Analisi dati`; elenco dei 10 giocatori con i valori nel testo, il primo è il giocatore 5 (Sato Jun, `18,680,000` nel testo); grafico con l'asse scritto con i separatori delle migliaia (`17.500.000`), senza `1e7`.
 3. *Secondo la metodologia, quali metriche contano di più per i difensori centrali? Poi mostrami i 3 CB con il duels_won_pct attuale più alto.* → entrambi gli strumenti, prima il manuale poi i dati; Pereira 72.0, Balaguer 67.9, Ito Yuta 64.1.
 4. Conversazione: *Qual è lo scout_rating medio nell'ultima stagione?* → *E nella stagione precedente?* → 65.11 su 405, poi 66.18 su 400.
 5. *Quali correzioni avete applicato ai dati?* → numeri della riga corrispondente nei valori attesi.
