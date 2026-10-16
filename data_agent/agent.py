@@ -28,6 +28,7 @@ matplotlib.use("Agg")  # backend non interattivo: necessario in un processo serv
 import matplotlib.pyplot as plt
 from unittest import mock
 from matplotlib.figure import Figure
+from matplotlib.ticker import FuncFormatter, ScalarFormatter
 import seaborn as sns
 import pandas as pd
 
@@ -46,6 +47,31 @@ CHARTS_DIR.mkdir(exist_ok=True) # crea cartella se manca
 # oltre il limite il testo viene troncato e in fondo si aggiunge una nota fissa. La nota
 # esplicita serve a evitare che il modello riempia i vuoti inventando i dati mancanti.
 MAX_TOOL_OUTPUT = 6000
+
+# Valore assoluto, sull'intervallo visibile di un asse, da cui in poi i numeri si scrivono
+# per esteso con il punto delle migliaia invece della notazione scientifica (es. 1e7).
+SOGLIA_ASSE_GRANDE = 1_000_000
+
+
+def _formatta_assi_grandi(fig):
+    """Scrive per esteso (es. 17.500.000) i numeri degli assi che matplotlib mostrerebbe con
+    il moltiplicatore in basso a destra (es. 1e7).
+
+    La scelta sta nel codice e non nel prompt perché il modello non formatta gli assi in modo
+    affidabile: anche quando la domanda chiedeva i milioni, il grafico usciva con 1e7.
+    Si interviene solo sugli assi con il formatter predefinito (tipo esatto ScalarFormatter,
+    non le sottoclassi): un formatter scelto dal modello resta com'è, e gli assi con
+    categorie, date o scala logaritmica hanno formatter di altro tipo, quindi non vengono
+    toccati. Le etichette degli assi le sceglie il modello."""
+    # round() prima del formato: evita "-0" per uno zero negativo e non cambia i tick, che
+    # a queste grandezze sono sempre interi
+    separatore = FuncFormatter(lambda valore, _: f"{round(valore):,}".replace(",", "."))
+    for ax in fig.axes:
+        for asse in (ax.xaxis, ax.yaxis):
+            if type(asse.get_major_formatter()) is not ScalarFormatter:
+                continue
+            if max(abs(estremo) for estremo in asse.get_view_interval()) >= SOGLIA_ASSE_GRANDE:
+                asse.set_major_formatter(separatore)
 
 
 def make_python_tool(df):
@@ -124,6 +150,8 @@ def make_python_tool(df):
                 # Solo il nome del file: nella nota per il modello non deve comparire
                 # nessun percorso del disco (fuga di informazioni e romperebbe l'URL).
                 filename = f"chart_{uuid.uuid4().hex[:8]}.png"
+                # plt.savefig salva la figura corrente: è quella da sistemare
+                _formatta_assi_grandi(plt.gcf())
                 plt.savefig(CHARTS_DIR / filename, bbox_inches="tight")
                 plt.close("all")
                 chart_note = f"\n[Grafico salvato correttamente: {filename}]"
