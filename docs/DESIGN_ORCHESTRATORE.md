@@ -77,7 +77,7 @@ se reply è vuota → errore (la route risponde 502 LLM_ERROR)
   - `chart` (boolean, **obbligatorio**): "true se l'utente ha chiesto un grafico, un diagramma o una visualizzazione; altrimenti false."
 - **Esecuzione**: se `chart` è `true`, il codice del tool aggiunge alla domanda la frase fissa `Genera anche un grafico adatto a mostrare il risultato.` (costante, in un solo punto); poi `analyzeWithDataAgent(domanda)`. Nel log compaiono `question` e `chart` come passati dal modello. La `question` è scritta dal modello dell'orchestratore, non è la frase dell'utente.
 - **Risultato per il modello**: `Risultato dell'analisi:\n<answer>`, poi **sempre una delle due note**, quando pertinente:
-  - se `chartUrl` non è null: `\n(È stato generato un grafico, mostrato all'utente sotto la risposta.)`;
+  - se `chartUrl` non è null: `\n(È stato generato un grafico: lo trovi qui sotto.)`;
   - se `chart` era `true` e `chartUrl` è null: `\n(Il grafico richiesto non è stato generato.)`.
 - **`chartUrl`**: vale l'ultimo non nullo tra le chiamate del turno (anche se `chart` era `false`: se il servizio ha generato comunque un grafico, si mostra).
 - **Errore**: `ERRORE_STRUMENTO: ` + `error.message` se l'errore è un `DataAgentError` (già pulito), altrimenti `il servizio di analisi dati non è al momento disponibile.`

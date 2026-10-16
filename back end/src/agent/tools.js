@@ -136,7 +136,7 @@ export function createTurnTools() {
         let text = `Risultato dell'analisi:\n${result.answer}`;
         if (result.chartUrl) {
           text +=
-            "\n(È stato generato un grafico, mostrato all'utente sotto la risposta.)";
+            "\n(È stato generato un grafico: lo trovi qui sotto.)";
         } else if (chart) {
           text += "\n(Il grafico richiesto non è stato generato.)";
         }
