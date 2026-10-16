@@ -4,6 +4,8 @@ Implementa la procedura descritta nella sezione 6 di data/platform_handbook.md.
 Viene eseguita una sola volta all'avvio del microservizio (lifespan in main.py):
 l'agente lavora sempre sui dati già puliti e riceve il riepilogo delle correzioni
 (cleaning_report) nel proprio system prompt.
+Tra le normalizzazioni dei testi rientrano anche la rimozione di titoli e qualifiche
+dai nomi dei giocatori (es. Dr., Mr, Herr, MBA), da un elenco chiuso.
 """
 
 import pandas as pd
@@ -23,6 +25,16 @@ MAPPA_CORREZIONE_NOMI = {
     '前田 健一': 'Maeda Kenichi',
     '佐藤 裕太': 'Sato Yuta',
 }
+
+# Titoli e qualifiche da togliere dai nomi dei giocatori. Elenchi chiusi: una parola
+# viene tolta solo se compare qui, a prescindere da maiuscole e punto finale.
+# Servono le forme con la punteggiatura interna ("dr(a)", "b.eng", "b.a") perché del
+# punto finale si occupa il confronto, non l'elenco.
+TITOLI_PREFISSO = {
+    "mr", "mrs", "ms", "dr", "dr(a)", "dott", "prof", "sr", "sra",
+    "hr", "herr", "frau", "fru",
+}
+QUALIFICHE_SUFFISSO = {"mba", "phd", "b.eng", "b.a"}
 
 # Grafie ufficiali dei 25 club presenti nel dataset. Nel file grezzo compaiono 74
 # varianti (maiuscole, spazi in più): ognuna viene ricondotta a uno di questi nomi.
@@ -75,6 +87,25 @@ def _parse_mixed_date(value):
         return pd.to_datetime(value, format='%Y-%m-%d')
     except ValueError:
         return pd.to_datetime(value, format='%d/%m/%Y')
+
+
+def _strip_titles(nome):
+    """Toglie titoli in testa (es. Dr., Mr, Herr) e qualifiche in coda (es. MBA) dal nome.
+    Agisce solo sulle parole intere ai due estremi e solo se presenti negli elenchi
+    chiusi: nessun'altra parte del nome viene toccata. Gli spazi in eccesso si
+    normalizzano da soli, perché split() ricostruisce il nome parola per parola."""
+    parole = str(nome).split()
+
+    def _chiave(parola):
+        # il punto finale è facoltativo ("Dr." e "Dr" sono lo stesso titolo)
+        return parola.rstrip(".").casefold()
+
+    # len(parole) > 1: un nome fatto di una sola parola non diventa mai vuoto
+    while len(parole) > 1 and _chiave(parole[0]) in TITOLI_PREFISSO:
+        parole = parole[1:]
+    while len(parole) > 1 and _chiave(parole[-1]) in QUALIFICHE_SUFFISSO:
+        parole = parole[:-1]
+    return " ".join(parole)
 
 
 def clean_scouting_data(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
@@ -136,7 +167,7 @@ def clean_scouting_data(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
 
     # correzione anomalie di range (pattern sistematici, non semplici outlier)
     # Valori fisicamente impossibili con uno schema riconoscibile: vengono corretti,
-    # non eliminati (handbook §6 punto 5). Le maschere si calcolano PRIMA di correggere
+    # non eliminati (handbook §6 punto 6). Le maschere si calcolano PRIMA di correggere
     # e servono sia per contare sia per modificare esattamente quelle righe.
     mask_pass = df['pass_accuracy_pct'] > 100    # percentuale oltre 100: valore registrato doppio
     mask_sprint = df['sprint_speed_kmh'] < 0     # velocità negativa: errore di segno
@@ -161,6 +192,23 @@ def clean_scouting_data(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
         'nomi_distinti': int(df.loc[mask_nomi, 'player_name'].nunique()),
     }
     df['player_name'] = df['player_name'].replace(MAPPA_CORREZIONE_NOMI)
+
+    # titoli e qualifiche nei nomi (es. "Dr. Rene Mühle MBA." -> "Rene Mühle")
+    # Dopo la traslitterazione e prima della deduplica, come le altre normalizzazioni dei
+    # testi. Il titolo è lo stesso in tutte le righe di un giocatore, quindi non cambia
+    # quali righe risultano duplicate. La chiave resta player_id.
+    nomi_prima = df['player_name']
+    df['player_name'] = df['player_name'].apply(_strip_titles)
+    mask_titoli = nomi_prima != df['player_name']
+    report['nomi_con_titoli_rimossi'] = {
+        'righe': int(mask_titoli.sum()),
+        'giocatori': int(df.loc[mask_titoli, 'player_id'].nunique()),
+        # un esempio reale (prima -> dopo) per il riepilogo; stringa vuota se nessuno
+        'esempio': (
+            f"{nomi_prima[mask_titoli].iloc[0]} -> {df.loc[mask_titoli, 'player_name'].iloc[0]}"
+            if mask_titoli.any() else ""
+        ),
+    }
 
     # deduplica: DOPO tutte le normalizzazioni (righe uguali nella sostanza ma scritte
     # in modo diverso diventano identiche) e PRIMA dell'imputazione (le mediane non
@@ -240,6 +288,7 @@ def format_cleaning_report(report: dict) -> str:
     dup = report['duplicati']
     rng = report['correzioni_range']
     nomi = report['nomi_traslitterati']
+    titoli = report['nomi_con_titoli_rimossi']
     date = report['date_formato_gg_mm_aaaa_convertite']
     imp = report['valori_imputati_con_mediana_ruolo_stagione']
     stesso_giorno = report['osservazioni_stesso_giorno']
@@ -257,6 +306,7 @@ I conteggi delle correzioni sono riferiti alle righe del file grezzo; quelli del
 - Date: {date['observation_date']} date di osservazione e {date['contract_expiry']} scadenze di contratto in formato GG/MM/AAAA convertite.
 - Correzioni di range: {rng['pass_accuracy_pct_dimezzati']} valori di pass_accuracy_pct superiori a 100 dimezzati; {rng['sprint_speed_kmh_resi_positivi']} valori negativi di sprint_speed_kmh resi positivi; {rng['height_cm_divisi_per_10']} valori di height_cm superiori a 210 divisi per 10.
 - Nomi traslitterati dal giapponese: {nomi['righe']} righe ({nomi['nomi_distinti']} nomi distinti).
+- Titoli e qualifiche (es. Dr., Mr, Herr, MBA) tolti dai nomi: {titoli['giocatori']} giocatori ({titoli['righe']} righe), per esempio "{titoli['esempio']}".
 - Valori mancanti imputati con la mediana per ruolo e stagione:
 {righe_imputazioni}
 - saves, save_pct e clean_sheets restano vuoti per i non portieri (mancanti per costruzione, non imputati).

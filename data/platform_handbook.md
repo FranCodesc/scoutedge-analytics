@@ -1,7 +1,7 @@
 # ScoutEdge Analytics - Manuale Interno del Reparto Data Science & Client Success
 
-**Versione:** 1.6
-**Ultimo aggiornamento:** Settembre 2026
+**Versione:** 1.7
+**Ultimo aggiornamento:** Ottobre 2026
 **Ad uso di:** Team Data Science, Team Client Success, Onboarding nuovi analisti
 
 ---
@@ -118,8 +118,9 @@ Prima di qualunque analisi aggregata o calcolo di trend su un dataset di scoutin
 2. **Gestione valori mancanti:** i valori mancanti su metriche numeriche (es. xG, xA, sprint_speed_kmh) non vengono eliminati automaticamente riga per riga, ma segnalati e, dove statisticamente sensato, imputati con la mediana del ruolo/stagione di riferimento, per non distorcere le medie con rimozioni indiscriminate.
 3. **Normalizzazione dei formati:** uniformazione dei formati data (alcune osservazioni arrivano in formato `GG/MM/AAAA`, altre in `AAAA-MM-GG`) e dei testi (maiuscole/minuscole e spazi incoerenti nei nomi di club e nazionalità).
 4. **Normalizzazione degli alfabeti non latini:** i nomi dei giocatori osservati in alcuni campionati (es. Giappone) arrivano talvolta registrati nell'alfabeto originale (es. caratteri kanji) invece che traslitterati. Il team Data Science applica una traslitterazione in caratteri latini prima di qualunque incrocio o confronto tra dataset, per garantire coerenza con i club clienti che operano su sistemi che non supportano alfabeti non latini.
-5. **Controllo dei range:** verifica che le metriche percentuali (es. `pass_accuracy_pct`) siano comprese tra 0 e 100, e che valori come `sprint_speed_kmh` o `height_cm` siano fisicamente plausibili; i valori fuori range vengono segnalati come possibili errori di trascrizione e corretti o esclusi dal calcolo, mai lasciati silenziosamente nell'analisi.
-6. **Documentazione delle modifiche:** ogni pulizia applicata a un dataset cliente viene sintetizzata insieme al report finale, così il club sa sempre quali correzioni sono state fatte sui propri dati grezzi.
+5. **Rimozione di titoli e qualifiche dai nomi dei giocatori:** alcuni nomi arrivano dalle fonti con un titolo davanti (es. `Dr.`, `Mr`, `Herr`, `Sr.`) o una qualifica in coda (es. `MBA`, `PhD`). Il team Data Science li toglie, in modo che nei report e nei grafici compaia solo il nome del giocatore (es. `Dr. Rene Mühle MBA.` diventa `Rene Mühle`). La rimozione segue un elenco chiuso di titoli e qualifiche e riguarda solo la prima e l'ultima parola del nome: nessun'altra parte del nome viene toccata. Questo passaggio non modifica il `player_id`, che resta la chiave di riferimento per ogni confronto.
+6. **Controllo dei range:** verifica che le metriche percentuali (es. `pass_accuracy_pct`) siano comprese tra 0 e 100, e che valori come `sprint_speed_kmh` o `height_cm` siano fisicamente plausibili; i valori fuori range vengono segnalati come possibili errori di trascrizione e corretti o esclusi dal calcolo, mai lasciati silenziosamente nell'analisi.
+7. **Documentazione delle modifiche:** ogni pulizia applicata a un dataset cliente viene sintetizzata insieme al report finale, così il club sa sempre quali correzioni sono state fatte sui propri dati grezzi.
 
 Questa procedura è la stessa che l'agente di analisi dati della piattaforma applica in automatico quando elabora una richiesta di analisi.
 

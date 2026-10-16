@@ -2,6 +2,9 @@
 
 Storico delle versioni del documento `platform_handbook.md` (knowledge base RAG di ScoutEdge Analytics). Non fa parte del contenuto indicizzato in ChromaDB: è documentazione di progetto ad uso interno/consegna.
 
+## 1.7 - Ottobre 2026
+- Aggiunto lo step "Rimozione di titoli e qualifiche dai nomi dei giocatori" alla Procedura di data cleaning (sezione 6), dopo la normalizzazione degli alfabeti non latini: titoli in testa (es. Dr., Mr, Herr) e qualifiche in coda (es. MBA, PhD) vengono tolti dai nomi, da un elenco chiuso. Rinumerati i passaggi successivi (Controllo dei range 6, Documentazione delle modifiche 7).
+
 ## 1.6 - Settembre 2026
 - Rimossa la sezione "Guida rapida alla dashboard" per evitare che la RAG citi funzionalita' di prodotto (Shortlist, Confronto Giocatori, Report Custom, Alert) non rappresentate nel frontend consegnato con il progetto. Rinumerate le sezioni successive (Policy dati 5, Data cleaning 6, SLA 7, FAQ 8) e aggiornati i rimandi incrociati.
 
