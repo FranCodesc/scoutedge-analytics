@@ -31,7 +31,7 @@ function isExpired(session) {
  *
  * Una sessione nuova si crea se l'id manca, è sconosciuto o è scaduto
  * (isNew: true): per il contratto non è un errore. Il formato UUID NON si
- * valida qui, spetta alla route (B8).
+ * valida qui, spetta alla route.
  *
  * La scadenza si controlla anche qui, e non solo nella pulizia periodica,
  * perché tra due passaggi del timer una sessione può essere già scaduta.

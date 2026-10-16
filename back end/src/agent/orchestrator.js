@@ -1,5 +1,5 @@
 /**
- * Orchestratore (B7, docs/DESIGN_ORCHESTRATORE.md §3): ciclo ReAct scritto a mano.
+ * Orchestratore (docs/DESIGN_ORCHESTRATORE.md §3): ciclo ReAct scritto a mano.
  *
  * Il modello decide quali strumenti chiamare (function calling), noi li
  * eseguiamo e gli restituiamo i risultati, finché risponde senza chiamarne

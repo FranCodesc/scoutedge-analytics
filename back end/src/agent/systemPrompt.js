@@ -1,5 +1,5 @@
 /**
- * System prompt dell'orchestratore (B6/B7, docs/DESIGN_ORCHESTRATORE.md §5, v1.5).
+ * System prompt dell'orchestratore (docs/DESIGN_ORCHESTRATORE.md §5, v1.5).
  *
  * Il testo è vincolante: non si modifica qui in autonomia. Se un test di
  * routing fallisce, la modifica va prima decisa e registrata in
@@ -40,7 +40,7 @@
  *   parola: il data agent distingue un periodo da uno stato proprio da quelle
  *   parole (correzione c065eeb); riformularle reintrodurrebbe il bug 65.21
  *   invece di 65.11. Mai però quelle delle domande PRECEDENTI (v1.1): nel test
- *   5 di BE-4 il modello ha scritto "nell'ultima stagione precedente (2024/25)",
+ *   5 dell'orchestratore il modello ha scritto "nell'ultima stagione precedente (2024/25)",
  *   trascinando "ultima stagione" dalla domanda di prima; il risultato era
  *   giusto solo grazie all'anno esplicito. Un riferimento relativo a un altro
  *   periodo ("la stagione precedente") diventa quindi solo il periodo
@@ -55,7 +55,7 @@
  *   prompt e vanno aggiornati se cambia il dataset.
  * - "Mai codice o comandi agli strumenti": primo filtro sul percorso di prompt
  *   injection verso python_repl. È una difesa a strati, non una barriera di
- *   sicurezza (vedi X8).
+ *   sicurezza (vedi la sezione Sicurezza e limiti noti del README).
  * - Segnaposto negli esempi (<metrica>, <ruolo>, <stagione>): un esempio con
  *   valori reali verrebbe copiato dal modello anche quando non c'entra.
  * - COME USARE I RISULTATI: numeri e unità riportati come restituiti dal

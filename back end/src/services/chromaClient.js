@@ -2,8 +2,8 @@ import { ChromaClient } from "chromadb";
 
 /**
  * Nome della collection che contiene i chunk dell'handbook.
- * Definito qui, in un unico punto, perché lo usano sia l'ingestion (B3)
- * sia il retrieval (B4): se i due nomi divergessero, la RAG cercherebbe
+ * Definito qui, in un unico punto, perché lo usano sia l'ingestion
+ * sia il retrieval: se i due nomi divergessero, la RAG cercherebbe
  * in una collection vuota senza dare errori.
  */
 export const COLLECTION_NAME = "platform-handbook";

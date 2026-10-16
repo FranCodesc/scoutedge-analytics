@@ -43,7 +43,7 @@ CHARTS_DIR = Path(__file__).resolve().parent / "charts"
 CHARTS_DIR.mkdir(exist_ok=True) # crea cartella se manca
 
 # Limite (in caratteri) del testo che il tool restituisce al modello. Dopo l'introduzione della
-# stampa completa dei DataFrame (D10) un risultato grande potrebbe far crescere molto i token:
+# stampa completa dei DataFrame un risultato grande potrebbe far crescere molto i token:
 # oltre il limite il testo viene troncato e in fondo si aggiunge una nota fissa. La nota
 # esplicita serve a evitare che il modello riempia i vuoti inventando i dati mancanti.
 MAX_TOOL_OUTPUT = 6000
@@ -114,13 +114,13 @@ def make_python_tool(df):
 
             # Tutto ciò che il codice stampa viene catturato in `output` invece di finire sul
             # terminale del server: è il testo che il tool restituisce al modello.
-            # Il contesto pandas mostra TUTTE le colonne (D10). Con la rappresentazione
+            # Il contesto pandas mostra TUTTE le colonne. Con la rappresentazione
             # abbreviata di default, le 35 colonne di df finivano in parte nei "...": il modello
-            # non vedeva `market_value_eur` e inventava il valore (diagnosi D10: "valore attuale
+            # non vedeva `market_value_eur` e inventava il valore (diagnosi: "valore attuale
             # più alto" → 15.000.000 o 5.000.000 invece di 18.680.000). La larghezza di 250
             # caratteri evita che le righe vengano spezzate male nell'output.
             #
-            # D11: il salvataggio dei grafici è riservato al tool. Se il codice del modello
+            # Il salvataggio dei grafici è riservato al tool. Se il codice del modello
             # chiama plt.savefig/fig.savefig scrive un PNG fuori da charts/ (con un nome suo),
             # e se poi chiama plt.close() la figura sparisce prima che il tool la veda: nessun
             # grafico e nessuna nota (grafico mancante in modo intermittente). Per tutta
@@ -162,7 +162,7 @@ def make_python_tool(df):
         except Exception as e:
             plt.close("all")
             return f"Errore nell'esecuzione: {e}"
-        # Troncamento dell'output (D10): la nota del grafico viene aggiunta DOPO, così resta
+        # Troncamento dell'output: la nota del grafico viene aggiunta DOPO, così resta
         # sempre in fondo e main.py la trova anche quando il testo è stato accorciato.
         testo = output.getvalue() or "Codice eseguito senza output."
         if len(testo) > MAX_TOOL_OUTPUT:
@@ -190,7 +190,7 @@ def build_data_agent(df, llm, cleaning_summary):
 
     # System prompt: ogni sezione è nata per correggere un comportamento sbagliato osservato
     # nei test, quindi l'ordine e la formulazione contano. Principio emerso dal lavoro sul
-    # controllo D8: le regole condizionali ("se... allora...") il modello non le esegue in
+    # controllo delle osservazioni nello stesso giorno: le regole condizionali ("se... allora...") il modello non le esegue in
     # modo affidabile, mentre le procedure con codice esatto da lanciare sempre e un ordine
     # fisso della risposta sì. Per questo gli esempi di codice usano segnaposto espliciti
     # (<...>) e non valori reali, che il modello potrebbe copiare.
@@ -202,25 +202,25 @@ def build_data_agent(df, llm, cleaning_summary):
     # 3. Chiave del giocatore: sempre 'player_id', mai 'player_name' (omonimie).
     # 4. Periodo oppure stato "attuale". Prima si distingue: se la domanda indica un periodo
     #    (stagione, anno, mese, intervallo di date), si filtra df sul periodo e si usano TUTTE le
-    #    sue osservazioni (regressione D7: "scout_rating medio nell'ultima stagione" veniva
+    #    sue osservazioni (regressione osservata: "scout_rating medio nell'ultima stagione" veniva
     #    calcolato sulle ultime osservazioni dei giocatori, 65.21, invece che su tutte le 405
     #    della stagione, 65.11). Se invece si chiede lo stato attuale senza periodo, vale la
     #    procedura esatta con ordinamento stabile (kind='stable'), anche per massimi, minimi e
-    #    classifiche su tutti i giocatori (bug D7: "valore attuale più alto nel dataset"
+    #    classifiche su tutti i giocatori (bug osservato: "valore attuale più alto nel dataset"
     #    restituiva il massimo storico). Il criterio è deterministico: a parità di data vince
     #    la riga registrata per ultima.
-    # 4bis. "Osservazione più recente" (D10). La domanda dei 3 difensori centrali "nell'osservazione
+    # 4bis. "Osservazione più recente". La domanda dei 3 difensori centrali "nell'osservazione
     #    più recente" sbagliava circa 2 volte su 10: il modello la leggeva come la sola data più
     #    recente del dataset (poche righe, un solo difensore) invece dell'ultima osservazione di
     #    ogni giocatore. Un tentativo scartato: un dataframe precalcolato (df_attuale), per le
-    #    regressioni che ha causato (il controllo D8 girava sul dataframe sbagliato, le domande su
+    #    regressioni che ha causato (il controllo delle osservazioni nello stesso giorno girava sul dataframe sbagliato, le domande su
     #    un periodo venivano calcolate sullo stato attuale). La definizione esplicita nel prompt
     #    resta: sui difensori centrali non ha dato un miglioramento misurabile (6/8 con la frase,
     #    8/8 senza, campioni troppo piccoli). L'errore su "valore di mercato attuale più alto"
     #    (5.000.000 o 15.000.000 invece di 18.680.000) non dipendeva dalla frase ma dall'output
     #    abbreviato del tool, che nascondeva la colonna del valore (vedi python_repl). L'errore
     #    intermittente sui difensori centrali resta un limite noto.
-    # 5. Controllo D8: per giocatori specifici stampa le osservazioni della data più recente e
+    # 5. Controllo delle osservazioni nello stesso giorno: per giocatori specifici stampa le osservazioni della data più recente e
     #    un elenco "GIOCATORI DA SEGNALARE" calcolato dal codice (gli id con più righe in quella
     #    data). Ordine fisso della risposta: prima il valore attuale, poi, solo per gli id
     #    dell'elenco, la segnalazione. Storia dei difetti: senza ordine fisso il modello ometteva
@@ -233,7 +233,7 @@ def build_data_agent(df, llm, cleaning_summary):
     #    serve solo al modello: senza il divieto la riportava nella risposta, a volte anche
     #    quando il controllo non era stato eseguito.
     #    Limite noto: con più giocatori nella stessa domanda (es. 33 e 70) l'affidabilità è
-    #    ridotta (0 corrette su 3 nei test D10). Si consiglia una domanda per giocatore.
+    #    ridotta (0 corrette su 3 nei test). Si consiglia una domanda per giocatore.
     # 6. Anti-allucinazione: se un'informazione non è tra le colonne, lo dice invece di
     #    rispondere con conoscenza generale.
     # 7. Valori categoriali: controlla con .unique() prima di filtrare (bug osservato:
@@ -241,11 +241,11 @@ def build_data_agent(df, llm, cleaning_summary):
     # 7bis. Significato dei codici di 'position' (dato del dominio, non una regola condizionale):
     #    il modello vedeva GK con .unique() ma non sapeva che vuol dire "portiere", e a una domanda
     #    sul "ruolo portiere" rispondeva che non c'erano osservazioni di portieri (bug emerso nei
-    #    test dell'orchestratore, D9). Con la tabella dei codici e dei gruppi filtra con .isin() e
+    #    test dell'orchestratore). Con la tabella dei codici e dei gruppi filtra con .isin() e
     #    dichiara i codici usati.
     # 8. Anti-link: niente link o percorsi dell'immagine nel testo; il grafico viene
     #    consegnato a parte da main.py tramite chart_url.
-    # 9. Riepilogo delle correzioni (D3): i numeri del cleaning non si possono ricostruire
+    # 9. Riepilogo delle correzioni: i numeri del cleaning non si possono ricostruire
     #    dal dataframe già pulito, quindi stanno nel prompt, con la regola di usare solo quelli
     #    e di dichiararne la base di calcolo.
     # Le graffe di cleaning_summary e delle colonne sono sostituite da Python (f-string).

@@ -1,7 +1,7 @@
 import { OpenAIEmbeddings } from "@langchain/openai";
 
 /**
- * Modello di embedding usato sia in ingestion (B3) sia in retrieval (B4).
+ * Modello di embedding usato sia in ingestion sia in retrieval.
  * Definito in un unico punto: se i chunk fossero indicati con un modello e
  * le domande con un altro, i vettori vivrebbero in spazi diversi e la
  * ricerca restituirebbe risultati sbagliati senza alcun errore.

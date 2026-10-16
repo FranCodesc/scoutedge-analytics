@@ -1,5 +1,5 @@
 /**
- * Test dell'API del back end (BE-6, B11).
+ * Test dell'API del back end.
  *
  * COSA VERIFICA
  * - PARTE A: controlli automatici del contratto (docs/CONTRATTO_API.md v1.0), con

@@ -80,7 +80,7 @@ def _parse_market_value(value):
 
 def _parse_mixed_date(value):
     """Converte una data in Timestamp. Nel file grezzo convivono AAAA-MM-GG e GG/MM/AAAA.
-    Limite noto: un valore mancante (NaN) solleverebbe un errore (D6; oggi non succede)."""
+    Limite noto: un valore mancante (NaN) solleverebbe un errore (oggi non succede)."""
     value = str(value).strip()
     # prova prima il formato ISO, poi quello GG/MM/AAAA
     try:
@@ -248,7 +248,7 @@ def clean_scouting_data(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     }
 
     # osservazioni dello stesso giocatore nello stesso giorno (mantenute, ma documentate)
-    # Decisione D8 (opzione A): non sono duplicati da eliminare ma valutazioni distinte,
+    # Decisione: non sono duplicati da eliminare ma valutazioni distinte,
     # in contrasto con l'handbook §3.4 ("osservatori diversi in match differenti"):
     # vengono solo contate e segnalate.
     # .size() conta le righe per ogni coppia (player_id, observation_date): il risultato

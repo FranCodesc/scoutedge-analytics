@@ -4,7 +4,7 @@ const DATA_AGENT_TIMEOUT_MS = 90_000;
 /**
  * Forma attesa del path del grafico restituito da FastAPI. Si ricontrolla
  * qui, oltre che nel data agent, perché il back end lo userà per costruire
- * l'URL del proxy dei grafici (B8): meglio non fidarsi del dato in ingresso.
+ * l'URL del proxy dei grafici: meglio non fidarsi del dato in ingresso.
  */
 const CHART_URL_PATTERN = /^\/charts\/chart_[0-9a-f]{8}\.png$/;
 
