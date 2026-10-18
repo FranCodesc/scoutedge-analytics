@@ -257,6 +257,8 @@ La parte automatica esegue 23 controlli (validazione degli input, codici di erro
 
 Le verifiche che richiedono di spegnere servizi, i valori attesi e le distanze di retrieval sono in [`docs/TEST.md`](docs/TEST.md).
 
+Il data agent ha due script di prova in `data_agent/scripts/` (traccia di una domanda e regressione), descritti in [`docs/TEST.md`](docs/TEST.md#script-di-test-del-data-agent). L'esito della prova end-to-end dall'interfaccia è in [`docs/TEST.md`](docs/TEST.md#esito-della-prova-end-to-end-18-ottobre-2026).
+
 ## Struttura del repository
 
 ```text
@@ -284,6 +286,7 @@ Le verifiche che richiedono di spegnere servizi, i valori attesi e le distanze d
 │   │   └── http/                  formato unico degli errori
 │   └── chroma_data/               dati di Chroma (creata da Docker, esclusa da git)
 ├── data_agent/
+│   ├── scripts/                   traccia_agente.py e regression_check.py
 │   ├── .env.example
 │   ├── requirements.txt
 │   ├── main.py                    servizio FastAPI

@@ -90,8 +90,10 @@ Valori calcolati sul dataset dopo la pulizia (1185 righe, 130 giocatori).
 | Andamento dello scout_rating medio per stagione | 2023/24 66.59 (380) · 2024/25 66.18 (400) · 2025/26 65.11 (405) |
 | Conversazione: ultima stagione → "e nella stagione precedente?" | 65.11 su 405 → 2024/25, 66.18 su 400 |
 | Conversazione: stagione 2024/25 → "e in quella precedente?" | 66.18 su 400 → 2023/24, 66.59 su 380 |
+| Conversazione: ultima stagione → "e per i portieri?" | 65.11 su 405 → 68.91 su 46 osservazioni. **68.29 su 14 è sbagliato** |
 | Valore di mercato medio sull'osservazione più recente di ogni giocatore | 6.887.985 € su 130 righe. Su tutte le 1185 righe sarebbe 7.156.158 €: valore sbagliato |
 | Rating attuale del giocatore 70 | 66 (Davide Russo, 28/11/2025), con la segnalazione delle due osservazioni della stessa data (Marini 57, Russo 66). È l'unico giocatore con più osservazioni nella sua data più recente |
+| Rating attuale dei giocatori 33 e 70 | 80 (giocatore 33, 30/03/2026, nessuna segnalazione) e 66 (giocatore 70) con la segnalazione delle due osservazioni del 28/11/2025 (Marini 57, Russo 66) |
 | Rating attuale dei giocatori 33 / 10 / 60 | 80 (Valeria Costa, 30/03/2026) / 74 (Davide Russo, 20/03/2026) / 50 (Antonio Greco, 31/12/2025), senza segnalazioni |
 | Scout_rating medio per ruolo nell'ultima stagione | GK 68.91 (46) · CB 62.34 (41) · terzini LB+RB 63.53 (86) · difensori CB+LB+RB 63.15 (127) · attaccanti LW+RW+ST 63.93 (76) · centrocampisti CDM+CM+CAM+LM+RM 66.16 (156) |
 | 3 CB con il duels_won_pct attuale più alto | giocatore 120 (Pereira) 72.0 · 122 (Balaguer) 67.9 · 6 (Ito Yuta) 64.1 (12 CB in totale) |
@@ -101,6 +103,7 @@ Valori calcolati sul dataset dopo la pulizia (1185 righe, 130 giocatori).
 | RAG: tempo di prima risposta per priorità media | 8 ore lavorative, sezione 7.1 |
 | RAG: escalation se lo SLA non è rispettato | Team Lead di Client Success, entro 4 ore lavorative, sezione 7.3 |
 | RAG: Qual è la procedura di data cleaning del team? | 7 passaggi; il quinto è la rimozione di titoli e qualifiche dai nomi dei giocatori, sezione 6 del manuale |
+| RAG: Come si calcola lo scout_rating? | Scala 1–99; valutazione qualitativa circa il 40%; fattore età (sopra i 30 anni e sotto i 21); soglie 80 e 40, sezione 3 del manuale |
 
 ## Distanze di retrieval
 
@@ -119,12 +122,12 @@ Distanze coseno dei primi 4 passaggi, misurate sul manuale indicizzato (18 chunk
 
 Il data agent è un LLM che scrive ed esegue codice: alcune domande hanno quindi un'affidabilità inferiore alla media. Sono limiti dichiarati, non errori da inseguire nei test.
 
-- **"I 3 CB con il duels_won_pct più alto nell'osservazione più recente"**: il risultato varia da un giro all'altro (da 1 su 5 a circa 7 su 10 nelle prove). L'errore è sempre lo stesso: compare solo Pereira. Con "attuale" al posto di "nell'osservazione più recente" i test hanno dato 10 su 10; la demo usa questa formulazione.
-- **Più giocatori specifici nella stessa richiesta** (per esempio il 33 e il 70): affidabilità ridotta (0 su 3 nelle prove).
+- **"I 3 CB con il duels_won_pct più alto nell'osservazione più recente"**: il risultato varia da un giro all'altro (da 1 su 5 a circa 7 su 10 nelle prove). L'errore è sempre lo stesso: compare solo Pereira. Con "attuale" al posto di "nell'osservazione più recente" i test hanno dato 10 su 10; la demo usa questa formulazione. Passando dall'orchestratore, l'espressione può essere riscritta in "nell'ultima stagione".
 - Le risposte non dichiarano i codici di ruolo usati nei filtri (0 su 8), anche se i filtri sono corretti.
 - Il CDM è conteggiato tra i centrocampisti. Il manuale (§3.3) lo valuta "come un difensore aggiunto", ma questo riguarda le metriche, non il gruppo di ruolo.
 - "Esterni" e "laterali" non sono mappati su un ruolo (termine ambiguo): ci si aspetta un chiarimento o i codici dichiarati.
 - **Formato degli importi nel testo**: gli importi nelle risposte sono scritti nella notazione anglosassone (18,680,000: virgola per le migliaia, punto per i decimali), mentre gli assi dei grafici usano il punto per le migliaia (17.500.000). Una regola sul formato nel prompt del data agent è stata provata e tolta perché peggiorava risposte che non c'entravano con gli importi.
+- **Asse dei grafici scelti dal modello**: l'asse può non partire da zero (per esempio lo scout_rating per stagione parte da 60), il che amplifica visivamente le differenze.
 - L'output dello strumento è limitato a 6000 caratteri e a 60 righe.
 - Un solo grafico per esecuzione.
 - Alcune date del CSV possono diventare valori mancanti in fase di lettura.
@@ -143,3 +146,83 @@ Elenco di partenza per la prova manuale dalla chat (<http://localhost:5173>), co
 6. *Qual è il rating attuale del giocatore 70?* → 66 con la segnalazione delle due osservazioni.
 7. *Qual è la capitale della Francia?* → nessuno strumento, risposta che delimita l'ambito.
 8. *Ciao!* → risposta breve, nessuno strumento.
+
+## Script di test del data agent
+
+In `data_agent/scripts/` ci sono due script per provare il data agent da solo, senza passare dal back end e dall'interfaccia. Si lanciano da `data_agent/`, con il `venv` attivo e la chiave OpenAI in `data_agent/.env`. Entrambi chiamano il modello e consumano quindi crediti OpenAI; nessuno dei due scrive file.
+
+### `traccia_agente.py`
+
+Costruisce lo stesso agente del servizio, gli pone una domanda e stampa passo per passo il codice che il modello manda a `python_repl`, l'output restituito dallo strumento e il testo del modello. Serve a capire cosa ha eseguito l'agente quando una risposta è sbagliata. Non richiede il data agent acceso.
+
+```bash
+cd data_agent
+source venv/bin/activate
+python scripts/traccia_agente.py "Qual è il rating attuale del giocatore con ID 70?"
+```
+
+### `regression_check.py`
+
+Pone una serie di domande a `POST /analyze` e controlla nelle risposte i valori attesi (e quelli sbagliati che non devono comparire). Richiede il data agent acceso sulla porta 8000 (`uvicorn main:app` da `data_agent/`) e usa solo la libreria standard di Python. Per ogni prova stampa `OK` o `KO`.
+
+```bash
+python scripts/regression_check.py                           # tutti i casi
+python scripts/regression_check.py giocatore                 # solo i casi il cui nome contiene "giocatore"
+RIPETI=3 python scripts/regression_check.py "giocatore 33"   # ripete ogni caso 3 volte
+```
+
+- **Filtro**: le parole dopo il nome dello script restringono i casi a quelli il cui nome le contiene (senza distinguere maiuscole e minuscole).
+- **`RIPETI`**: variabile d'ambiente che fissa il numero di ripetizioni di ogni caso; se non c'è, ogni caso usa le ripetizioni previste.
+- La batteria completa conta **28 prove** e ogni prova è una chiamata a OpenAI: conviene lanciarla dopo una modifica al prompt o al codice, non di continuo.
+
+## Esito della prova end-to-end (18 ottobre 2026)
+
+Prova manuale dall'interfaccia (<http://localhost:5173>) con tutti i servizi avviati: Chroma, data agent, back end e front end. È divisa in quattro gruppi. I valori delle risposte sono quelli della tabella [Valori attesi](#valori-attesi).
+
+### Domande della demo: 4 su 4
+
+| Domanda | Esito |
+|---|---|
+| Qual è il tempo di prima risposta per una richiesta ad alta priorità? | Corretta: solo manuale, 2 ore lavorative |
+| I 10 giocatori con il valore di mercato attuale più alto, con grafico | Corretta: elenco giusto, grafico presente, "Scarica" e "Ingrandisci" funzionanti |
+| Metodologia per i difensori centrali e poi i 3 CB con il `duels_won_pct` attuale più alto | Corretta: usati entrambi gli strumenti |
+| Conversazione: scout_rating medio nell'ultima stagione, poi "e nella stagione precedente?" | Corretta: 65.11, poi 66.18 |
+
+### Casi di confine e conversazioni
+
+| Domanda | Esito |
+|---|---|
+| Scout_rating medio per stagione | Corretto: solo dati, senza grafico perché non richiesto |
+| Come si calcola lo scout_rating? | Corretto: solo manuale |
+| Procedura di data cleaning del team, poi correzioni applicate ai dati | Corretto: la procedura (7 passaggi) dal manuale, le correzioni dai dati |
+| Conversazione: ultima stagione, poi "e per i portieri?" | Corretto: 68.91 su 46 osservazioni |
+| Conversazione: stagione 2024/25, poi "e in quella precedente?" | Corretto: 66.59 su 380 osservazioni |
+| Rating attuale del giocatore 70 | Corretto: 66, con la segnalazione delle due osservazioni dello stesso giorno |
+| Rating attuale dei giocatori 33 e 70 | Corretto dopo la correzione descritta più sotto |
+| Classifica dei CB nell'ultima stagione | Corretta |
+| Domanda fuori ambito | Corretta: nessuno strumento, risposta che delimita l'ambito |
+| Saluto | Corretto: risposta breve, nessuno strumento |
+| Richiesta di far eseguire codice | Corretta: nessuno strumento chiamato |
+| I 3 CB con il `duels_won_pct` più alto nell'osservazione più recente | Limite noto, vedi [Limiti noti del data agent](#limiti-noti-del-data-agent) |
+
+### Interfaccia: 5 su 5
+
+| Prova | Esito |
+|---|---|
+| Risposta in ritardo dopo "Nuova chat" | Corretto: la risposta tardiva viene scartata |
+| Campo di testo durante l'attesa | Corretto: disattivato |
+| Messaggio vuoto e messaggio oltre i 2000 caratteri | Corretto: non vengono inviati |
+| Schede di esempio con attesa lunga | Corretto: avviso dopo 10 secondi |
+| Vista da telefono | Corretta |
+
+### Servizi spenti: 3 su 3
+
+| Servizio spento | Esito |
+|---|---|
+| Data agent | Corretto: nessun dato inventato, nessun errore tecnico nel browser |
+| Chroma | Corretto: nessun dato inventato, nessun errore tecnico nel browser |
+| Back end | Corretto: messaggio chiaro con il pulsante "Riprova", nessun errore tecnico nel browser |
+
+### Difetto trovato e corretto
+
+Con la domanda sui giocatori 33 e 70 l'orchestratore la divide in due richieste e scrive al data agent "giocatore con ID 70". Con questa forma il data agent spesso non eseguiva il controllo delle osservazioni nello stesso giorno, e a volte affermava che non ce n'erano: in una prova mirata le risposte corrette erano 19 su 33. La correzione sta nel prompt del data agent: la regola che attiva il controllo elenca ora le forme con cui si può indicare un giocatore («giocatore 70», «giocatore con ID 70», «player_id 70», «id 70», più id insieme). Dopo la correzione: 30 risposte corrette su 30, «giocatore con ID 70» 10 su 10, regressione sui casi già presenti 25 su 25, interfaccia 3 su 3.
