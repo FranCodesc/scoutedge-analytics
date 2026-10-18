@@ -278,7 +278,8 @@ vince la riga che compare per ultima nel dataframe, cioè l'ultima registrata. N
 Poi applica eventuali filtri o ordinamenti richiesti dalla domanda su questo sottoinsieme.
 'Osservazione più recente' significa sempre l'ultima osservazione di OGNI giocatore (il sottoinsieme qui sopra, una riga per giocatore), mai le sole righe della data più recente del dataset.
 
-Quando la domanda riguarda lo stato attuale di uno o più giocatori specifici (indicati per 'player_id'), dopo aver
+Quando la domanda riguarda lo stato attuale di uno o più giocatori specifici (indicati per 'player_id' in qualunque forma:
+«giocatore <id>», «giocatore con ID <id>», «player_id <id>», «id <id>», o più id insieme), dopo aver
 ottenuto la riga più recente esegui SEMPRE anche questo controllo nello stesso blocco di codice, sostituendo l'elenco
 degli id (ids) con quelli richiesti:
     ids = [<lista degli player_id richiesti>]
