@@ -105,7 +105,7 @@ Manuale, dataset e interfaccia sono tenuti allineati tra loro. La procedura di d
 | Front end | React 19, Vite 8, Tailwind CSS 4, `react-markdown` con `remark-gfm` |
 | Back end | Node.js (moduli ESM), Express 5, LangChain.js 1.x (`@langchain/core`, `@langchain/openai`), client `chromadb` 3.x, `zod` |
 | Data agent | Python 3.13, FastAPI, uvicorn, pandas 3, matplotlib e seaborn, LangChain 1.x con LangGraph |
-| Database vettoriale | ChromaDB 1.x (immagine Docker `chromadb/chroma`), distanza coseno |
+| Database vettoriale | ChromaDB 1.4.4 (immagine Docker `chromadb/chroma`, fissata con il digest), distanza coseno |
 | Modelli OpenAI | `gpt-4o-mini` (orchestratore e data agent), `text-embedding-3-small` (embedding) |
 
 Le versioni esatte sono in `back end/package.json`, `front end/package.json` e `data_agent/requirements.txt`. Nel back end non c'è il pacchetto generico `langchain`: il ciclo ReAct di scelta degli strumenti è scritto a mano, per tenerne sotto controllo ogni passo (vedi [`docs/DESIGN_ORCHESTRATORE.md`](docs/DESIGN_ORCHESTRATORE.md)).
@@ -186,10 +186,12 @@ ChromaDB si esegue con **Docker**, che è l'unico modo supportato e provato. Con
 
 ```bash
 cd "back end"
-docker run -d --name chroma-scoutedge -p 8001:8000 -v "$(pwd)/chroma_data:/data" chromadb/chroma
+docker run -d --name chroma-scoutedge -p 8001:8000 -v "$(pwd)/chroma_data:/data" chromadb/chroma@sha256:1e0b73a187a28757c572acba508c46f48c9e8b0acaf5c20e6d95cdedce1acdf6
 npm run ingest
 cd ..
 ```
+
+L'immagine è fissata con il digest (Chroma 1.4.4, la versione su cui il progetto è stato provato) perché il tag `latest` cambia nel tempo e una versione diversa potrebbe non essere compatibile con il client `chromadb` del back end.
 
 - Il container espone Chroma sulla porta 8001 e salva i dati in `back end/chroma_data/`, una cartella esclusa da git. Chroma 1.x scrive in `/data` dentro il container, per questo il mount punta lì.
 - `npm run ingest` legge `data/platform_handbook.md`, ne calcola gli embedding con OpenAI e li scrive nella collection `platform-handbook`. Alla fine stampa `Chunk nella collection "platform-handbook": 18`.
