@@ -33,7 +33,10 @@ function MessageBubble({ message, onChartLoad }) {
   const isUser = role === "user";
 
   return (
+    // data-message-id: la chat ritrova da qui il fumetto dell'ultima risposta per
+    // misurarne l'altezza e portarne l'inizio in alto se è molto lunga.
     <div
+      data-message-id={message.id}
       className={`flex items-end gap-2 ${
         isUser
           ? "origin-bottom-right animate-send justify-end"

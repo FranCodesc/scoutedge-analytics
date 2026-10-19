@@ -16,6 +16,17 @@ const STICK_THRESHOLD_PX = 120;
 // Durante lo scroll animato partono molti eventi "scroll" con una distanza ancora
 // grande: per questo tempo li ignoro, altrimenti il pulsante ⬇ lampeggerebbe.
 const PROGRAMMATIC_SCROLL_MS = 700;
+// Una risposta è "più alta della zona visibile" se supera l'altezza della lista meno
+// questo margine (il padding alto e basso della lista, circa 16 px per lato).
+const FIT_SLACK_PX = 32;
+// Distanza tra il bordo alto della lista e l'inizio di una risposta lunga portata in alto.
+const LONG_ANSWER_TOP_MARGIN_PX = 12;
+
+/** Comportamento dello scroll: con "riduci movimento" è sempre istantaneo. */
+function scrollBehavior(smooth) {
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return smooth && !reduce ? "smooth" : "auto";
+}
 
 // Guscio alto quanto la finestra; sul campo da calcio, chat a sinistra e pannello
 // grafici a destra (da 1024px) con la stessa altezza. Scorre solo la lista dei messaggi.
@@ -32,6 +43,9 @@ export default function Chat() {
   const stickRef = useRef(true);
   // Fino a questo istante gli eventi di scroll sono dovuti al nostro scroll automatico.
   const ignoreScrollUntilRef = useRef(0);
+  // Id dell'ultima risposta dell'assistente (benvenuto escluso): serve a ritrovarne il
+  // fumetto per misurarlo.
+  const lastAnswerIdRef = useRef(null);
   // Mostra il pulsante ⬇ quando ci sono contenuti sotto la zona visibile.
   const [showJump, setShowJump] = useState(false);
   // Finestra con il grafico ingrandito (aperta dal pulsante "Ingrandisci").
@@ -41,14 +55,33 @@ export default function Chat() {
   const scrollToBottom = useCallback((smooth) => {
     const el = scrollerRef.current;
     if (!el) return;
-    const reduce = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+    ignoreScrollUntilRef.current = performance.now() + PROGRAMMATIC_SCROLL_MS;
+    el.scrollTo({ top: el.scrollHeight, behavior: scrollBehavior(smooth) });
+  }, []);
+
+  /**
+   * Se l'ultima risposta è più alta della zona visibile, ne porta l'INIZIO in alto
+   * (invece della fine, che farebbe perdere il principio del testo), smette di seguire
+   * il fondo e mostra il pulsante ⬇. Se la risposta sta dentro non fa nulla.
+   * @returns {boolean} true se ha scorso; false se la risposta sta dentro e il
+   *   chiamante deve scendere in fondo come al solito.
+   */
+  const alignLongAnswer = useCallback((smooth) => {
+    const el = scrollerRef.current;
+    const id = lastAnswerIdRef.current;
+    if (!el || id === null) return false;
+    const bubble = el.querySelector(`[data-message-id="${id}"]`);
+    if (!bubble || bubble.offsetHeight <= el.clientHeight - FIT_SLACK_PX) {
+      return false;
+    }
     ignoreScrollUntilRef.current = performance.now() + PROGRAMMATIC_SCROLL_MS;
     el.scrollTo({
-      top: el.scrollHeight,
-      behavior: smooth && !reduce ? "smooth" : "auto",
+      top: Math.max(0, bubble.offsetTop - LONG_ANSWER_TOP_MARGIN_PX),
+      behavior: scrollBehavior(smooth),
     });
+    stickRef.current = false;
+    setShowJump(true);
+    return true;
   }, []);
 
   // Scroll fatto dall'utente: aggiorna "sono in fondo?" e il pulsante ⬇.
@@ -64,7 +97,9 @@ export default function Chat() {
 
   // Nuovo contenuto (messaggio, errore, indicatore di attesa):
   // - se l'utente ha appena inviato, o la chat è appena ripartita, scendo sempre in fondo;
-  // - se era già in fondo, lo seguo;
+  // - se era già in fondo e arriva una risposta più alta della zona visibile, ne porto
+  //   l'inizio in alto (alignLongAnswer);
+  // - se era già in fondo, in tutti gli altri casi lo seguo;
   // - altrimenti non lo disturbo e mostro il pulsante ⬇.
   // Il lavoro avviene in un callback di requestAnimationFrame: così legge le misure
   // dopo il disegno e aggiorna lo stato fuori dal corpo dell'effetto.
@@ -73,23 +108,35 @@ export default function Chat() {
     if (last?.role === "user" || messages.length === 1) {
       stickRef.current = true;
     }
+    // Il benvenuto (unico messaggio) non è una risposta da allineare.
+    const isAnswer = last?.role === "assistant" && messages.length > 1;
+    if (isAnswer) lastAnswerIdRef.current = last.id;
+
     const frame = requestAnimationFrame(() => {
       if (stickRef.current) {
-        scrollToBottom(true);
-        setShowJump(false);
+        if (!(isAnswer && alignLongAnswer(true))) {
+          scrollToBottom(true);
+          setShowJump(false);
+        }
       } else {
         setShowJump(true);
       }
     });
     return () => cancelAnimationFrame(frame);
-  }, [messages, busy, scrollToBottom]);
+  }, [messages, busy, scrollToBottom, alignLongAnswer]);
 
   // Quando un grafico finisce di caricarsi l'altezza della bolla cresce:
-  // se ero in fondo ci rimango (istantaneo), altrimenti segnalo che c'è altro sotto.
+  // - se non ero in fondo (anche perché la risposta è già stata portata in alto)
+  //   non mi muovo e segnalo che c'è altro sotto;
+  // - se ero in fondo e ora la risposta è più alta della zona visibile ne porto
+  //   l'inizio in alto; altrimenti resto in fondo (istantaneo).
   const handleChartLoad = useCallback(() => {
-    if (stickRef.current) scrollToBottom(false);
-    else setShowJump(true);
-  }, [scrollToBottom]);
+    if (!stickRef.current) {
+      setShowJump(true);
+      return;
+    }
+    if (!alignLongAnswer(false)) scrollToBottom(false);
+  }, [alignLongAnswer, scrollToBottom]);
 
   // Click sul pulsante ⬇: da qui in poi si torna a seguire le risposte.
   const handleJump = useCallback(() => {
