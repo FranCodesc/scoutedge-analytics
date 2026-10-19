@@ -7,6 +7,7 @@ import ChartsPanel from "./ChartsPanel";
 import ChatInput from "./ChatInput";
 import ErrorCard from "./ErrorCard";
 import MessageBubble from "./MessageBubble";
+import NotesDialog from "./NotesDialog";
 import PitchBackground from "./PitchBackground";
 import Thinking from "./Thinking";
 import Welcome from "./Welcome";
@@ -21,6 +22,10 @@ const PROGRAMMATIC_SCROLL_MS = 700;
 const FIT_SLACK_PX = 32;
 // Distanza tra il bordo alto della lista e l'inizio di una risposta lunga portata in alto.
 const LONG_ANSWER_TOP_MARGIN_PX = 12;
+
+// Stile comune dei pulsanti dell'intestazione ("Note" e "Nuova chat").
+const HEADER_BUTTON_CLASS =
+  "rounded-lg border border-white/20 px-3 py-1.5 text-sm font-semibold transition hover:border-edge hover:text-edge";
 
 /** Comportamento dello scroll: con "riduci movimento" è sempre istantaneo. */
 function scrollBehavior(smooth) {
@@ -50,6 +55,8 @@ export default function Chat() {
   const [showJump, setShowJump] = useState(false);
   // Finestra con il grafico ingrandito (aperta dal pulsante "Ingrandisci").
   const [zoomOpen, setZoomOpen] = useState(false);
+  // Finestra con le note sul progetto (aperta dal pulsante "Note").
+  const [notesOpen, setNotesOpen] = useState(false);
 
   /** Porta il contenitore in fondo; con "riduci movimento" lo scroll è istantaneo. */
   const scrollToBottom = useCallback((smooth) => {
@@ -153,13 +160,20 @@ export default function Chat() {
         <h1 className="font-display text-2xl font-bold tracking-wide">
           Scout<span className="text-edge">Edge</span>
         </h1>
-        <button
-          type="button"
-          onClick={newChat}
-          className="rounded-lg border border-white/20 px-3 py-1.5 text-sm font-semibold transition hover:border-edge hover:text-edge"
-        >
-          Nuova chat
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setNotesOpen(true)}
+            aria-haspopup="dialog"
+            title="Note sul progetto"
+            className={HEADER_BUTTON_CLASS}
+          >
+            Note
+          </button>
+          <button type="button" onClick={newChat} className={HEADER_BUTTON_CLASS}>
+            Nuova chat
+          </button>
+        </div>
       </header>
 
       <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:px-6 lg:pb-6">
@@ -262,10 +276,11 @@ export default function Chat() {
         </main>
       </div>
 
-      {/* Montata solo quando serve: si apre al montaggio, onClose la smonta */}
+      {/* Montate solo quando servono: si aprono al montaggio, onClose le smonta */}
       {zoomOpen && lastChartSrc && (
         <ChartDialog src={lastChartSrc} onClose={() => setZoomOpen(false)} />
       )}
+      {notesOpen && <NotesDialog onClose={() => setNotesOpen(false)} />}
     </div>
   );
 }

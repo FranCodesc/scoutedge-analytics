@@ -8,6 +8,7 @@ Interfaccia web di chat dell'assistente di ScoutEdge Analytics (progetto finale 
 - Risposte formattate in Markdown (tabelle, elenchi, grassetto), **senza HTML grezzo**.
 - Grafici generati dal data agent: nel fumetto della risposta e, su desktop (da 1024 px), nel pannello laterale con l'ultimo grafico, con "Ingrandisci" e "Scarica".
 - Etichette sotto ogni risposta che mostrano da dove arriva: `📄 Handbook — <sezione>` per ogni sezione citata del manuale, `📄 Handbook (nessuna sezione citata)` se il manuale è stato consultato ma nessuna sezione è citata, oppure `📊 Analisi dati`.
+- Finestra "Note" (pulsante in alto) con una breve descrizione del progetto, dell'architettura e dei limiti, e l'autore.
 - Indicatore di attesa, input bloccato durante l'elaborazione (una sola richiesta alla volta), avviso se si è offline.
 - Errori mostrati in chat con il messaggio del server; il messaggio dell'utente resta e, quando ha senso, c'è "Riprova".
 - "Nuova chat": azzera la conversazione e scarta le risposte ancora in arrivo.
@@ -66,7 +67,7 @@ src/
 └── components/
     ├── Chat.jsx             layout, scroll della lista, composizione dei pezzi
     ├── MessageBubble.jsx, MessageContent.jsx, ToolBadges.jsx, ChartImage.jsx
-    ├── ChartsPanel.jsx, ChartDialog.jsx
+    ├── ChartsPanel.jsx, ChartDialog.jsx, NotesDialog.jsx
     ├── ChatInput.jsx, Welcome.jsx, Thinking.jsx, ErrorCard.jsx
     └── Preloader.jsx, PitchBackground.jsx, Ball.jsx, Avatar.jsx
 ```
