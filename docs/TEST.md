@@ -225,4 +225,25 @@ Prova manuale dall'interfaccia (<http://localhost:5173>) con tutti i servizi avv
 
 ### Difetto trovato e corretto
 
-Con la domanda sui giocatori 33 e 70 l'orchestratore la divide in due richieste e scrive al data agent "giocatore con ID 70". Con questa forma il data agent spesso non eseguiva il controllo delle osservazioni nello stesso giorno, e a volte affermava che non ce n'erano: in una prova mirata le risposte corrette erano 19 su 33. La correzione sta nel prompt del data agent: la regola che attiva il controllo elenca ora le forme con cui si può indicare un giocatore («giocatore 70», «giocatore con ID 70», «player_id 70», «id 70», più id insieme). Dopo la correzione: «giocatore con ID 70» 30 su 30, «giocatore 70» 10 su 10, regressione sui casi già presenti 25 su 25, interfaccia 3 su 3.
+Con la domanda sui giocatori 33 e 70 l'orchestratore la divide in due richieste e scrive al data agent "giocatore con ID 70". Con questa forma il data agent spesso non eseguiva il controllo delle osservazioni nello stesso giorno, e a volte affermava che non ce n'erano: in una prova mirata le risposte corrette erano 19 su 33. La correzione sta nel prompt del data agent: la regola che attiva il controllo elenca ora le forme con cui si può indicare un giocatore («giocatore 70», «giocatore con ID 70», «player_id 70», «id 70», più id insieme). Dopo la correzione: «giocatore con ID 70» 30 su 30, «giocatore 70» 10 su 10, regressione sui casi già presenti 25 su 25, interfaccia 3 su 3. Nella [verifica da clone pulito](#verifica-da-clone-pulito-19-ottobre-2026) la batteria completa da 28 prove è passata 28 su 28.
+
+## Verifica da clone pulito (19 ottobre 2026)
+
+Il repository è stato clonato in una cartella nuova e installato seguendo solo il [README](../README.md), con un container di Chroma nuovo creato dal comando con il digest.
+
+| Passo | Esito |
+|---|---|
+| `npm install` del back end | Nessun avviso, nessuna vulnerabilità |
+| `npm audit --omit=dev` del front end | Nessuna vulnerabilità |
+| Ingestione del manuale (`npm run ingest`) | 18 chunk |
+| Avvio del data agent | Dataframe pulito di forma (1185, 35) |
+| `npm run test:api -- --solo-a` | 23 OK su 23 |
+| `regression_check.py`, batteria completa | 28 su 28 |
+| Le quattro domande della demo dall'interfaccia | Corrette |
+| Chiavi nei file del repository | Nessuna |
+| File generati dall'installazione da committare | Nessuno |
+
+Punti emersi e corretti nel README:
+
+- **Python 3.13 su macOS**: il comando `python3` di sistema è la versione 3.9 e `python3.13` non esiste se non è stato installato; il README indica ora come installarlo e come controllare la versione.
+- **URL senza `http://` nel `.env`**: il back end parte lo stesso e l'errore compare alla prima domanda che usa il servizio; la tabella dei problemi descrive ora il sintomo reale.

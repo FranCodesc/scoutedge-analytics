@@ -113,7 +113,7 @@ Le versioni esatte sono in `back end/package.json`, `front end/package.json` e `
 ## Prerequisiti
 
 - **Node.js** 20.19 o successivo (oppure 22.12 o successivo), con npm. Lo richiede Vite 8.
-- **Python 3.13**, con il modulo `venv`.
+- **Python 3.13**, con il modulo `venv`. Su macOS il comando `python3` di sistema è una versione più vecchia (la 3.9), troppo vecchia per questo progetto: pandas 3 richiede almeno la 3.11. Python 3.13 si installa dal sito python.org (installer per macOS) oppure con Homebrew (`brew install python@3.13`): entrambi forniscono il comando `python3.13`.
 - **Docker**, per eseguire ChromaDB. È l'unico modo supportato per avviarlo.
 - **Una chiave API OpenAI** con accesso a `gpt-4o-mini` e a `text-embedding-3-small`.
 - **Porte libere**: 5173, 3001, 8000 e 8001.
@@ -162,7 +162,9 @@ deactivate
 cd ..
 ```
 
-Se usi conda, esegui `conda deactivate` prima di creare e attivare il `venv`: con due ambienti attivi insieme `python` e `pip` possono puntare a quello sbagliato. Se `python3.13` non esiste sul tuo sistema, usa il comando che avvia Python 3.13 (`python3 --version` mostra la versione).
+Prima di creare il `venv`, controlla la versione: `python3.13 --version` deve rispondere 3.13.x. Se il comando `python3.13` non esiste, Python 3.13 non è installato (vedi i [Prerequisiti](#prerequisiti)): `python3` da solo, su macOS, è la versione di sistema e non va bene. Se Python 3.13 arriva da Anaconda o Miniconda, puoi usare il percorso completo dell'interprete, per esempio `/opt/anaconda3/bin/python3.13 -m venv venv`. Dopo `source venv/bin/activate`, anche `python --version` deve rispondere 3.13.x.
+
+Se usi conda, esegui `conda deactivate` prima di creare e attivare il `venv`: con due ambienti attivi insieme `python` e `pip` possono puntare a quello sbagliato.
 
 ## Configurazione dei file `.env`
 
@@ -366,7 +368,7 @@ Per questo il sistema è pensato per un uso locale e dimostrativo. Le difese ado
 - **Comportamento probabilistico.** Gli LLM non sono deterministici: alcune domande sui dati hanno un'affidabilità inferiore alla media (elenco in [`docs/TEST.md`](docs/TEST.md#limiti-noti-del-data-agent)).
 - **Formato degli importi.** Nelle risposte gli importi sono scritti nella notazione anglosassone (18,680,000: virgola per le migliaia, punto per i decimali), mentre gli assi dei grafici usano il punto per le migliaia (17.500.000). Una regola sul formato nel prompt del data agent è stata provata e tolta perché peggiorava risposte che non c'entravano con gli importi.
 - **Stagioni scritte nel prompt**, come detto sopra.
-- **Dipendenze di sviluppo del front end.** `npm audit` può segnalare vulnerabilità in pacchetti usati solo in sviluppo e in fase di build: non fanno parte del codice che arriva al browser.
+- **Dipendenze di sviluppo del front end.** `npm audit` può segnalare vulnerabilità in pacchetti usati solo in sviluppo e in fase di build: non fanno parte del codice che arriva al browser. Lo si verifica da `front end/` con `npm audit --omit=dev`, che non segnala nessuna vulnerabilità nelle dipendenze che arrivano al browser.
 
 ### In produzione servirebbero
 
@@ -383,7 +385,7 @@ Una sandbox isolata per l'esecuzione del codice (container senza rete né access
 | Errore "address already in use" all'avvio | La porta (3001, 5173, 8000 o 8001) è occupata | `lsof -i :3001` (cambia il numero) per vedere il processo, poi fermalo |
 | Dopo `pip install` mancano pacchetti o `python` è quello sbagliato | È attivo conda, o il venv non è attivato | `conda deactivate`, poi ricrea e attiva il `venv` (vedi [Installazione](#installazione)) |
 | Errore `LLM_ERROR` (502) in chat | Chiave OpenAI mancante, non valida o senza credito | Controlla `OPENAI_API_KEY` in `back end/.env` e in `data_agent/.env`, poi riavvia il servizio: le modifiche ai `.env` si leggono solo all'avvio |
-| Il back end si ferma all'avvio con un errore sugli URL | Un indirizzo nel `.env` è senza `http://` | Scrivi l'URL completo, per esempio `http://localhost:8001` |
+| L'assistente dice che il manuale o l'analisi dati non sono disponibili, e nel log del back end compare l'errore sull'URL (`CHROMA_URL deve iniziare con http:// o https:// e contenere un host`, oppure `DATA_AGENT_URL mancante o non valida`) | Un indirizzo nel `.env` del back end è senza `http://`. Il back end parte lo stesso: l'errore compare alla prima domanda che usa quel servizio | Scrivi l'URL completo, per esempio `http://localhost:8001`, e riavvia il back end: il `.env` si legge solo all'avvio |
 | Nel browser compare un errore di rete o di CORS | Il front end non gira sulla porta 5173, oppure il back end non su 3001 | In `back end/.env` imposta `FRONTEND_ORIGIN` all'indirizzo reale del front end; in `front end/.env` imposta `VITE_API_URL`; riavvia i due servizi |
 | Risposta "richiesta già in corso" (409) | La domanda precedente della stessa conversazione non ha ancora finito | Aspetta la risposta, oppure avvia una "Nuova chat" |
 | L'interfaccia usa un carattere diverso da Barlow Condensed | Senza rete, Google Fonts non si carica | Non è un errore: si usa il carattere di sistema |
