@@ -1,7 +1,8 @@
 /**
  * Costruisce le etichette nell'ordine di `toolsUsed` (ordine di primo utilizzo, dal contratto):
  *  - search_handbook con passaggi trovati → una etichetta per ogni sezione in `sources`;
- *  - search_handbook senza passaggi (sotto soglia di rilevanza) → etichetta neutra;
+ *  - search_handbook senza sezioni citate (nessun passaggio trovato, oppure manuale
+ *    non raggiungibile: il front end non distingue i due casi) → etichetta neutra;
  *  - analyze_data → "Analisi dati".
  * Con `toolsUsed` vuoto non c'è nessuna etichetta. Valori sconosciuti sono ignorati,
  * così un nuovo strumento del back end non rompe l'interfaccia.
@@ -11,7 +12,7 @@ function buildLabels(toolsUsed, sources) {
   for (const tool of toolsUsed) {
     if (tool === "search_handbook") {
       if (sources.length === 0) {
-        labels.push("📄 Handbook (nessun passaggio pertinente)");
+        labels.push("📄 Handbook (nessuna sezione citata)");
       } else {
         for (const { section } of sources)
           labels.push(`📄 Handbook — ${section}`);

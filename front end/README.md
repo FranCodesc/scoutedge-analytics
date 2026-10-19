@@ -7,7 +7,7 @@ Interfaccia web di chat dell'assistente di ScoutEdge Analytics (progetto finale 
 - Chat con memoria della conversazione (il `sessionId` è tenuto dal back end; qui vive solo in memoria).
 - Risposte formattate in Markdown (tabelle, elenchi, grassetto), **senza HTML grezzo**.
 - Grafici generati dal data agent: nel fumetto della risposta e, su desktop (da 1024 px), nel pannello laterale con l'ultimo grafico, con "Ingrandisci" e "Scarica".
-- Etichette sotto ogni risposta che mostrano da dove arriva: `📄 Handbook — <sezione>` oppure `📊 Analisi dati`.
+- Etichette sotto ogni risposta che mostrano da dove arriva: `📄 Handbook — <sezione>` per ogni sezione citata del manuale, `📄 Handbook (nessuna sezione citata)` se il manuale è stato consultato ma nessuna sezione è citata, oppure `📊 Analisi dati`.
 - Indicatore di attesa, input bloccato durante l'elaborazione (una sola richiesta alla volta), avviso se si è offline.
 - Errori mostrati in chat con il messaggio del server; il messaggio dell'utente resta e, quando ha senso, c'è "Riprova".
 - "Nuova chat": azzera la conversazione e scarta le risposte ancora in arrivo.
@@ -91,4 +91,4 @@ Il formato delle richieste e delle risposte, i codici di errore, i limiti (2000 
 ## Limiti noti
 
 - Le variabili `VITE_` sono pubbliche per costruzione (vedi sopra).
-- `npm audit` segnala vulnerabilità nelle dipendenze di **sviluppo** (`source-map-js`, `postcss-selector-parser`): non arrivano nel codice servito al browser.
+- `npm audit` segnala una vulnerabilità moderata in una dipendenza di **sviluppo** (`postcss-selector-parser`, tramite `@tailwindcss/typography`): non arriva nel codice servito al browser (`npm audit --omit=dev` non segnala nulla). La correzione automatica richiederebbe `--force` e un downgrade del plugin, quindi non è applicata.

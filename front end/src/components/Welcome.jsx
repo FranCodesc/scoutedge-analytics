@@ -9,11 +9,11 @@ const SUGGESTIONS = [
       "Qual è il tempo di prima risposta per una richiesta ad alta priorità?",
   },
   {
-    icon: "📈",
-    title: "Andamento dello scout_rating",
-    hint: "Le tre stagioni a confronto, con grafico",
+    icon: "💰",
+    title: "Valore di mercato",
+    hint: "I 10 giocatori più preziosi, con grafico",
     prompt:
-      "Com'è cambiato lo scout_rating medio nelle tre stagioni? Mostrami un grafico.",
+      "Quali sono i 10 giocatori con il valore di mercato attuale più alto? Mostrami anche un grafico.",
   },
   {
     icon: "🛡️",
