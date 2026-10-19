@@ -59,7 +59,7 @@ export default function ChartsPanel({
 
   return (
     <section
-      className="relative hidden min-w-0 flex-1 basis-0 origin-center flex-col overflow-hidden rounded-xl border border-white/25 bg-pitch-950/70 transition-transform duration-300 ease-out hover:z-10 hover:scale-[1.03] hover:shadow-2xl motion-reduce:transition-none motion-reduce:hover:scale-100 lg:flex"
+      className="relative hidden min-w-0 flex-1 basis-0 flex-col overflow-hidden rounded-xl border border-white/25 bg-pitch-950/70 transition-colors duration-300 hover:border-edge/50 lg:flex"
       aria-label="Area grafici"
     >
       <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2.5">
@@ -114,12 +114,23 @@ export default function ChartsPanel({
           </p>
         )}
         {usable && (
-          <img
-            src={src}
-            alt="Grafico generato dall'analisi dei dati"
-            onError={() => setFailedSrc(src)}
-            className="absolute inset-4 size-[calc(100%-2rem)] animate-fade-up rounded-lg bg-white object-contain"
-          />
+          // Il grafico è anche un pulsante: apre la stessa finestra di "Ingrandisci".
+          // Se onZoom manca il pulsante resta spento, come quello nell'intestazione.
+          <button
+            type="button"
+            onClick={onZoom}
+            disabled={!onZoom}
+            aria-label="Ingrandisci il grafico"
+            title="Ingrandisci il grafico"
+            className="absolute inset-4 cursor-zoom-in rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-edge disabled:cursor-default"
+          >
+            <img
+              src={src}
+              alt="Grafico generato dall'analisi dei dati"
+              onError={() => setFailedSrc(src)}
+              className="size-full animate-fade-up rounded-lg bg-white object-contain"
+            />
+          </button>
         )}
       </div>
     </section>
