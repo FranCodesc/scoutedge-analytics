@@ -4,6 +4,8 @@ Assistente conversazionale per il reparto Data Science & Client Success di **Sco
 
 È il progetto finale del master universitario "AI e Agenti AI per il Business" (Start2Impact / UniMarconi).
 
+Una presentazione di 15 slide, con scenario, architettura, esempi di conversazione, sfide, test e limiti, è in [`docs/ScoutEdge_Analytics_presentazione.pdf`](docs/ScoutEdge_Analytics_presentazione.pdf).
+
 ## Lo scenario
 
 Le persone del reparto hanno due problemi diversi, che di solito richiedono due strumenti diversi:
@@ -55,9 +57,12 @@ Come lavorano insieme:
 
 - Chat in italiano con memoria: "e nella stagione precedente?" o "e per i portieri?" si capiscono dal contesto.
 - Risposte formattate in Markdown (elenchi, tabelle, grassetto).
-- Grafici generati al volo dal data agent, mostrati nella risposta e, su schermi larghi, in un pannello laterale con "Ingrandisci" e "Scarica".
-- Etichette sotto ogni risposta che mostrano da dove arriva: `📄 Handbook — <sezione>` oppure `📊 Analisi dati`.
-- Indicatore di attesa durante l'elaborazione, avviso se si è offline, errori mostrati in chat con un messaggio comprensibile.
+- Grafici generati al volo dal data agent, mostrati nella risposta e, su schermi larghi (da 1024 px), in un pannello laterale con "Ingrandisci" e "Scarica". Il grafico del pannello si ingrandisce anche con un clic.
+- Etichette sotto ogni risposta che mostrano da dove arriva: `📄 Handbook — <sezione>` per ogni sezione del manuale citata, `📊 Analisi dati`, oppure `📄 Handbook (nessuna sezione citata)` quando il manuale è stato consultato ma non c'è nessuna sezione da citare (nessun passaggio abbastanza pertinente, oppure Chroma non raggiungibile).
+- Quattro schede di esempio nella schermata iniziale: un clic invia la domanda.
+- Pulsante "Note" in alto: apre la finestra "Note sul progetto", con una breve descrizione del progetto, dell'architettura e dei limiti, e l'autore.
+- Indicatore di attesa durante l'elaborazione, con un avviso dopo 10 secondi se la risposta tarda; avviso se si è offline.
+- Errori mostrati in chat con un messaggio comprensibile e, quando ritentare ha senso, il pulsante "Riprova".
 - "Nuova chat" per azzerare la conversazione.
 - Se uno dei servizi non è disponibile, l'assistente lo dichiara e non inventa numeri né contenuti del manuale.
 
@@ -67,7 +72,7 @@ Quattro domande che mostrano le diverse strade. I risultati attesi sono in [`doc
 
 | # | Domanda | Cosa mostra |
 |---|---|---|
-| 1 | *Qual è il tempo di prima risposta per una richiesta ad alta priorità?* | Solo RAG: risposta dal manuale (sezione 7), etichetta `📄 Handbook` |
+| 1 | *Qual è il tempo di prima risposta per una richiesta ad alta priorità?* | Solo RAG: risposta dal manuale (sezione 7), etichetta `📄 Handbook — 7. SLA e procedura di supporto` |
 | 2 | *Quali sono i 10 giocatori con il valore di mercato attuale più alto? Mostrami anche un grafico.* | Solo data agent: analisi del dataset e grafico, etichetta `📊 Analisi dati` |
 | 3 | *Secondo la metodologia, quali metriche contano di più per i difensori centrali? Poi mostrami i 3 CB con il duels_won_pct attuale più alto.* | Entrambi gli strumenti, in sequenza: prima il manuale, poi i dati |
 | 4 | *Qual è lo scout_rating medio nell'ultima stagione?* seguita da *E nella stagione precedente?* | Memoria della conversazione: la seconda domanda si capisce solo con la prima |
@@ -119,7 +124,7 @@ Le versioni esatte sono in `back end/package.json`, `front end/package.json` e `
 - **Porte libere**: 5173, 3001, 8000 e 8001.
 - **Git**, per clonare il repository.
 
-I comandi di questo README sono scritti per macOS e Linux, e sono stati provati su macOS. Su Windows cambia soprattutto il modo di attivare l'ambiente virtuale Python.
+I comandi di questo README sono scritti per macOS e Linux, e sono stati provati su macOS. Per Windows c'è la sezione [Su Windows (PowerShell)](#su-windows-powershell), con i comandi equivalenti: non è stata provata su Windows.
 
 **Sui costi.** Ogni domanda genera alcune chiamate a `gpt-4o-mini` (una per l'orchestratore, di più se interviene il data agent), e l'indicizzazione del manuale usa gli embedding. Con questi modelli il costo è contenuto, ma non nullo, e la suite di test completa fa decine di richieste. Conviene usare una chiave con un limite di spesa.
 
@@ -188,7 +193,7 @@ ChromaDB si esegue con **Docker**, che è l'unico modo supportato e provato. Con
 
 ```bash
 cd "back end"
-docker run -d --name chroma-scoutedge -p 8001:8000 -v "$(pwd)/chroma_data:/data" chromadb/chroma@sha256:1e0b73a187a28757c572acba508c46f48c9e8b0acaf5c20e6d95cdedce1acdf6
+docker run -d --name chroma-scoutedge -p 127.0.0.1:8001:8000 -v "$(pwd)/chroma_data:/data" chromadb/chroma@sha256:1e0b73a187a28757c572acba508c46f48c9e8b0acaf5c20e6d95cdedce1acdf6
 npm run ingest
 cd ..
 ```
@@ -196,6 +201,7 @@ cd ..
 L'immagine è fissata con il digest (Chroma 1.4.4, la versione su cui il progetto è stato provato) perché il tag `latest` cambia nel tempo e una versione diversa potrebbe non essere compatibile con il client `chromadb` del back end.
 
 - Il container espone Chroma sulla porta 8001 e salva i dati in `back end/chroma_data/`, una cartella esclusa da git. Chroma 1.x scrive in `/data` dentro il container, per questo il mount punta lì.
+- La porta è pubblicata come `127.0.0.1:8001`, non come semplice `8001`: senza l'indirizzo davanti Docker la apre su tutte le interfacce, e Chroma, che qui non ha autenticazione, sarebbe raggiungibile da chiunque sia sulla stessa rete. Il back end gira sullo stesso computer e usa `localhost`, quindi non cambia nulla per l'avvio.
 - `npm run ingest` legge `data/platform_handbook.md`, ne calcola gli embedding con OpenAI e li scrive nella collection `platform-handbook`. Alla fine stampa `Chunk nella collection "platform-handbook": 18`.
 - L'ingestione si può rilanciare in sicurezza: aggiorna i passaggi esistenti e rimuove quelli che non esistono più nel manuale.
 - Se il container esiste già (errore "name already in use"), non ricrearlo: `docker start chroma-scoutedge`. Dopo un riavvio del computer si fa lo stesso: i dati indicizzati restano.
@@ -247,6 +253,38 @@ Le analisi sui dati possono richiedere fino a un minuto (il modello scrive ed es
 
 Per fermare tutto: `Ctrl+C` in ciascun terminale e `docker stop chroma-scoutedge`.
 
+## Su Windows (PowerShell)
+
+I comandi di questo README sono stati provati solo su macOS. Quelli qui sotto sono gli equivalenti per Windows 10 e 11 con PowerShell, ma **non sono stati provati su Windows**: se qualcosa non torna, fa fede il messaggio di errore.
+
+Servono gli stessi prerequisiti (Node.js, Python 3.13, Git, chiave OpenAI) e **Docker Desktop con il backend WSL 2**, che è l'impostazione predefinita dell'installer. Il comando `py` (installato con Python da python.org) sceglie la versione con `py -3.13`.
+
+| Passo | macOS / Linux | Windows (PowerShell) |
+|---|---|---|
+| Creare il `venv` | `python3.13 -m venv venv` | `py -3.13 -m venv venv` |
+| Attivare il `venv` | `source venv/bin/activate` | `.\venv\Scripts\Activate.ps1` |
+| Copiare i file `.env` | `cp .env.example .env` | `Copy-Item .env.example .env` |
+| Cartella corrente nel volume di Docker | `-v "$(pwd)/chroma_data:/data"` | `-v "${PWD}/chroma_data:/data"` |
+| Controllare i servizi | `curl http://localhost:3001/` | `curl.exe http://localhost:3001/` |
+| Variabile d'ambiente per un comando | `RIPETI=3 python scripts/regression_check.py "giocatore 33"` | `$env:RIPETI=3; python scripts/regression_check.py "giocatore 33"` |
+| Processo che occupa una porta | `lsof -i :3001` | `netstat -ano \| findstr :3001` |
+
+Il comando di Chroma, da `back end/`:
+
+```powershell
+docker run -d --name chroma-scoutedge -p 127.0.0.1:8001:8000 -v "${PWD}/chroma_data:/data" chromadb/chroma@sha256:1e0b73a187a28757c572acba508c46f48c9e8b0acaf5c20e6d95cdedce1acdf6
+```
+
+Note:
+
+- Se PowerShell rifiuta `Activate.ps1` perché l'esecuzione di script è disabilitata, esegui una volta `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` e riprova.
+- In PowerShell `curl` è un alias di `Invoke-WebRequest`: per i comandi del README serve `curl.exe`.
+- `${PWD}` va scritto con le graffe, altrimenti PowerShell legge male il percorso davanti ai due punti.
+- `$env:RIPETI` resta impostata finché la finestra è aperta; per toglierla: `Remove-Item Env:RIPETI`.
+- Tutto il resto (`npm`, `uvicorn`, `docker start`, `docker stop`, `npm run ingest`) è identico. Lo stesso vale per i comandi di [`docs/TEST.md`](docs/TEST.md), con le stesse traduzioni.
+
+In alternativa si può usare **WSL 2** con una distribuzione Linux (per esempio Ubuntu): i comandi Linux di questo README valgono così come sono. Il repository va clonato dentro il file system di WSL (non sotto `/mnt/c`, che è lento), Node.js e Python 3.13 vanno installati dentro la distribuzione, e in Docker Desktop va attivata l'integrazione con WSL.
+
 ## Test
 
 Con Chroma, data agent e back end avviati, da `back end/`:
@@ -275,7 +313,8 @@ Il data agent ha due script di prova in `data_agent/scripts/` (traccia di una do
 │   ├── CONTRATTO_API.md           contratto tra front end e back end
 │   ├── DESIGN_ORCHESTRATORE.md    design e prompt dell'orchestratore
 │   ├── TEST.md                    come testare, valori attesi
-│   └── CHANGELOG_HANDBOOK.md      storico delle versioni del manuale
+│   ├── CHANGELOG_HANDBOOK.md      storico delle versioni del manuale
+│   └── ScoutEdge_Analytics_presentazione.pdf   presentazione (15 slide)
 ├── back end/
 │   ├── .env.example
 │   ├── package.json
@@ -303,6 +342,8 @@ Il data agent ha due script di prova in `data_agent/scripts/` (traccia di una do
     ├── README.md                  dettagli dell'interfaccia
     └── src/                       api/, hooks/, components/
 ```
+
+Per i dettagli dell'interfaccia (componenti, scelte tecniche, script) vedi [`front end/README.md`](front%20end/README.md).
 
 ## Contratto API e orchestratore
 
@@ -354,7 +395,7 @@ Per questo il sistema è pensato per un uso locale e dimostrativo. Le difese ado
 
 - **Orchestratore:** una regola del prompt vieta di inoltrare codice, comandi o istruzioni agli strumenti (verificata con una richiesta di prompt injection, test 9 di [`docs/TEST.md`](docs/TEST.md)). È un primo filtro, non una garanzia.
 - **Input:** messaggi limitati a 2000 caratteri, corpo della richiesta a 10 kb, `sessionId` validato come UUID.
-- **Rete:** il data agent ascolta solo su `127.0.0.1`; la CORS del back end ammette solo l'origine del front end.
+- **Rete:** il data agent e Chroma sono raggiungibili solo dal computer su cui girano: uvicorn ascolta su `127.0.0.1` e il container di Chroma pubblica la porta solo in locale (`-p 127.0.0.1:8001:8000`). La CORS del back end ammette solo l'origine del front end.
 - **Tempo:** timeout di 90, 120 e 130 secondi sui tre tratti della richiesta.
 - **Grafici:** i nomi dei file sono validati a tre livelli (data agent, back end e front end) contro il path traversal, e il salvataggio dei grafici è riservato allo strumento, non al codice del modello.
 - **Informazioni:** nessun percorso di sistema viene dato al modello, nessun errore interno né valore di configurazione arriva al browser, e l'output dello strumento è limitato a 6000 caratteri.
