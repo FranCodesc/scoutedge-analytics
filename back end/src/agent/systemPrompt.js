@@ -38,7 +38,7 @@
  *   sostituiti con valori espliciti. Le espressioni temporali della domanda
  *   CORRENTE ("attuale", "ultima stagione") vanno invece conservate parola per
  *   parola: il data agent distingue un periodo da uno stato proprio da quelle
- *   parole (correzione c065eeb); riformularle reintrodurrebbe il bug 65.21
+ *   parole (correzione 305290d); riformularle reintrodurrebbe il bug 65.21
  *   invece di 65.11. Mai però quelle delle domande PRECEDENTI (v1.1): nel test
  *   5 dell'orchestratore il modello ha scritto "nell'ultima stagione precedente (2024/25)",
  *   trascinando "ultima stagione" dalla domanda di prima; il risultato era
