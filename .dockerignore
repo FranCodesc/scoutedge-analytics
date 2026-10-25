@@ -1,0 +1,20 @@
+# Segreti: nessun file .env deve entrare nell'immagine, in nessuna cartella.
+**/.env*
+
+# Dipendenze e ambienti locali: nell'immagine si reinstallano da zero.
+**/node_modules
+**/venv
+**/__pycache__
+**/.ipynb_checkpoints
+
+# Build e dati generati: si rigenerano durante la build o all'avvio.
+front end/dist
+back end/chroma_data
+data_agent/charts/*.png
+
+# Non servono all'esecuzione.
+.git
+**/.DS_Store
+.vscode
+docs
+data_agent/prototype.ipynb
