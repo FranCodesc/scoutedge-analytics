@@ -8,8 +8,11 @@ set -u
 
 log() { echo "[avvio] $*"; }
 
-# Variabili obbligatorie: si controlla solo che ci siano, senza mai stamparle.
-for var in OPENAI_API_KEY FRONTEND_ORIGIN; do
+# Variabili obbligatorie: si controlla solo che ci siano, senza mai stamparle
+# (i valori del limite di frequenza li valida il back end). Il limite deve
+# essere sempre attivo online, e senza TRUST_PROXY tutti gli utenti avrebbero
+# l'IP di nginx e condividerebbero un solo contatore: meglio non partire.
+for var in OPENAI_API_KEY FRONTEND_ORIGIN RATE_LIMIT_WINDOW_MIN RATE_LIMIT_PER_IP RATE_LIMIT_GLOBAL TRUST_PROXY; do
   if [ -z "${!var:-}" ]; then
     log "ERRORE: variabile $var non impostata"
     exit 1
@@ -75,7 +78,8 @@ cd /app/data_agent
 avvia "Data agent" uvicorn main:app --host 127.0.0.1 --port 8000
 attendi "Data agent" http://127.0.0.1:8000/ "${PIDS[-1]}" || { ferma_tutto; exit 1; }
 
-# 4) Back end (Express), su 127.0.0.1:3001 dietro nginx.
+# 4) Back end (Express): ascolta sulla porta 3001 di tutte le interfacce del
+#    container, ma la porta non è pubblicata, quindi si raggiunge solo tramite nginx.
 cd "/app/back end"
 avvia "Back end" node src/index.js
 attendi "Back end" http://127.0.0.1:3001/ "${PIDS[-1]}" || { ferma_tutto; exit 1; }
