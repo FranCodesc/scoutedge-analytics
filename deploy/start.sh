@@ -40,11 +40,16 @@ ferma_tutto() {
   done
 }
 
-# attendi <nome> <url> <pid>: attende (al massimo 60 s) che il servizio risponda
-# e si ferma subito se il suo processo è già terminato.
+# Attesa massima per ciascun servizio, in secondi. Sull'hardware condiviso della
+# piattaforma l'avvio (soprattutto il caricamento delle librerie Python del data
+# agent) può essere molto più lento che su un computer locale.
+ATTESA_MAX=120
+
+# attendi <nome> <url> <pid>: attende (al massimo ATTESA_MAX secondi) che il
+# servizio risponda e si ferma subito se il suo processo è già terminato.
 attendi() {
   local nome=$1 url=$2 pid=$3 i
-  for i in $(seq 1 60); do
+  for i in $(seq 1 "$ATTESA_MAX"); do
     if ! kill -0 "$pid" 2>/dev/null; then
       log "ERRORE: $nome si è fermato durante l'avvio"
       return 1
@@ -55,7 +60,7 @@ attendi() {
     fi
     sleep 1
   done
-  log "ERRORE: $nome non risponde dopo 60 secondi"
+  log "ERRORE: $nome non risponde dopo $ATTESA_MAX secondi"
   return 1
 }
 
