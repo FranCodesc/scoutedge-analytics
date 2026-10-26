@@ -3,7 +3,7 @@ title: ScoutEdge Analytics
 sdk: docker
 app_port: 7860
 pinned: false
-short_description: Agente AI ibrido: RAG e analisi dati per lo scouting
+short_description: Agente AI ibrido (RAG e analisi dati) per lo scouting
 ---
 
 # ScoutEdge Analytics - demo online
