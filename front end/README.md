@@ -41,6 +41,8 @@ Un'unica variabile, in `.env` (da copiare da `.env.example`):
 
 Vite espone al browser **tutte** le variabili che iniziano con `VITE_`: in questo file non vanno mai chiavi API o altri segreti. Il front end parla solo con il back end, mai direttamente con il data agent o con Chroma. Se `VITE_API_URL` manca, l'app avvisa in console e usa il default.
 
+Nella build del container della demo online `VITE_API_URL` non viene dal file `.env` (escluso dall'immagine) ma da un argomento di build, `--build-arg VITE_API_URL=<url>`, senza valore predefinito: senza l'argomento la build si ferma. Vedi [Avvio in locale con Docker](../README.md#avvio-in-locale-con-docker).
+
 Il back end deve accettare l'origine del front end (variabile `FRONTEND_ORIGIN` del back end): serve anche al pulsante "Scarica".
 
 ## Script

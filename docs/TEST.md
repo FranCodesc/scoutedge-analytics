@@ -247,3 +247,112 @@ Punti emersi e corretti nel README:
 
 - **Python 3.13 su macOS**: il comando `python3` di sistema è la versione 3.9 e `python3.13` non esiste se non è stato installato; il README indica ora come installarlo e come controllare la versione.
 - **URL senza `http://` nel `.env`**: il back end parte lo stesso e l'errore compare alla prima domanda che usa il servizio; la tabella dei problemi descrive ora il sintomo reale.
+
+## Prove del limite di frequenza in locale
+
+Il limite di frequenza su `POST /api/chat` ([Limite di frequenza](CONTRATTO_API.md#limite-di-frequenza)) è spento senza variabili d'ambiente e si prova a parte, con valori bassi, per non disturbare i test normali. Le richieste di prova usano un messaggio non valido, che il limite conta comunque perché sta prima della validazione del corpo.
+
+| Prova | Esito |
+|---|---|
+| Test del contratto senza limite (`npm run test:api -- --solo-a`) | 23 OK su 23: con le variabili assenti il comportamento non cambia |
+| Limite per IP impostato a 3 | le prime 3 richieste passano, dalla 4ª risposta 429 `RATE_LIMITED` |
+| Limite globale impostato a 3 | le prime 3 richieste passano, dalla 4ª risposta 429 `RATE_LIMITED` |
+| Avvii con configurazione non valida | 6 configurazioni rifiutate: il back end non parte e esce con codice 1 |
+
+Il back end non parte se le tre variabili `RATE_LIMIT_*` sono presenti solo in parte, se un valore non è un intero positivo o se la finestra supera i 1440 minuti. Lo stesso vale per un `TRUST_PROXY` che non è un intero maggiore o uguale a 0.
+
+## Prove del container in locale
+
+Il container della demo ([Demo online e deploy](../README.md#demo-online-e-deploy)) è stato costruito e provato in locale con Docker prima di pubblicarlo (25 ottobre 2026).
+
+| Prova | Esito |
+|---|---|
+| Dimensione dell'immagine | 1,96 GB su disco, 406 MB compressi |
+| Le quattro domande della demo dall'interfaccia, servite da nginx | 4 su 4 |
+| Porte interne (back end, data agent, Chroma) | non raggiungibili dall'esterno del container: si passa solo da nginx |
+| Limite di frequenza dietro nginx | funziona: 429 e, nel log, l'IP del client mascherato (`172.17.x.x`, indirizzo della rete di Docker) |
+| Riavvio del container | il manuale viene indicizzato di nuovo: 18 chunk |
+| Segreti nell'immagine | nessuno |
+| Prova a secco di `deploy/upload_space.sh --prova` | 74 file dal commit, nessuno tra quelli vietati |
+
+## Simulazione con risorse ridotte
+
+Prima di scegliere la piattaforma è stato simulato in locale il piano gratuito di Render, con il container limitato a 0,1 CPU e 512 MB di memoria, e con una regola di decisione fissata prima della prova ([Scelta della piattaforma](../README.md#scelta-della-piattaforma)):
+
+```bash
+docker run --cpus=0.1 --memory=512m ...
+```
+
+Tempi di avvio, dal lancio del container a nginx pronto:
+
+| Servizio | Tempo |
+|---|---|
+| Chroma | 1,7 s |
+| Indicizzazione del manuale | 28 s |
+| Data agent | 91 s (di cui 79 s per caricare Python e le librerie) |
+| Back end | 28 s |
+| nginx | 0,5 s |
+| **Totale** | **2 minuti e 29 secondi** |
+
+La causa è la CPU, non il codice: quasi tutto il tempo del data agent serve a caricare le librerie Python. Con questo avvio il piano gratuito è stato scartato.
+
+La memoria del container in funzione, misurata a parte, è tra 212 e 256 MB.
+
+## Prove online (26 ottobre 2026)
+
+Prove sulla demo pubblicata (<https://francodesc-scoutedge-analytics.hf.space>), dopo il caricamento del commit con `deploy/upload_space.sh`.
+
+### Costruzione e avvio
+
+| Prova | Esito |
+|---|---|
+| Build dell'immagine sullo Space (amd64) | riuscita al primo tentativo, circa 57 s |
+| Avvio del container | servizi pronti circa 20 s dopo l'avvio |
+| Riavvio dello Space dall'interfaccia web | demo funzionante circa 30 s dopo il clic |
+
+### Le quattro domande della demo: 4 su 4
+
+Dal computer, con i tempi di risposta:
+
+| Domanda | Esito | Tempo |
+|---|---|---|
+| Tempo di prima risposta per priorità alta | Corretta | 3,6 s |
+| 10 giocatori con il valore di mercato più alto, con grafico | Corretta | 15,0 s |
+| Metodologia per i CB e poi i 3 CB con il `duels_won_pct` più alto | Corretta | 13,9 s |
+| Conversazione: scout_rating medio nell'ultima stagione, poi "e nella stagione precedente?" | Corretta | 4,8 s + 5,4 s |
+
+Le stesse quattro domande da un telefono Android: 4 su 4.
+
+### Limite di frequenza
+
+Per provarlo online i valori sono stati abbassati a 3 e poi ripristinati (20 per IP, 100 in totale).
+
+| Prova | Esito |
+|---|---|
+| Limite per IP a 3 | risposte 400, 400, 400 (richieste volutamente non valide, che contano), poi 429 con `Retry-After` e corpo come da contratto |
+| Limite globale a 3 | 429 alla 4ª richiesta |
+
+### `TRUST_PROXY`
+
+| Prova | Esito |
+|---|---|
+| `TRUST_PROXY=1` | il limite vede indirizzi interni di Hugging Face (`10.20.x.x`), diversi a ogni richiesta |
+| `TRUST_PROXY=2` | il limite vede l'IP pubblico del computer da cui si prova |
+| `X-Forwarded-For: 1.2.3.4` scritto a mano | ignorato: il limite continua a usare l'IP vero |
+| Avvisi di `express-rate-limit` nei log | nessuno |
+
+### Rotte interne ed errori
+
+| Prova | Esito |
+|---|---|
+| `/analyze`, `/docs`, `/openapi.json`, `/.env`, file del codice, `GET /api/chat` | tutti 404 |
+| Errori restituiti al browser | solo codici e messaggi del contratto |
+| Pagine 404 di nginx | non mostrano la versione del server |
+
+### Log
+
+Controllati i log completi dello Space dopo le prove: nessuna chiave, nessun traceback, indirizzi IP solo mascherati. Nei log del back end compaiono gli argomenti che l'orchestratore passa agli strumenti (le domande riformulate): è un limite dichiarato nel [README](../README.md#la-demo-online).
+
+### Non ancora osservato
+
+La pausa automatica dello Space dopo 48 ore senza visite (non modificabile con la CPU basic) non è stata ancora osservata; è il comportamento dichiarato dalla piattaforma.
