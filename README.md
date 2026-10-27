@@ -8,7 +8,7 @@ Assistente conversazionale per il reparto Data Science & Client Success di **Sco
 
 La demo gira su un servizio che va in pausa dopo 48 ore senza visite: se è ferma, la prima apertura richiede circa 30 secondi. Come è costruita e come si pubblica: [Demo online e deploy](#demo-online-e-deploy).
 
-Una presentazione di 15 slide, con scenario, architettura, esempi di conversazione, sfide, test e limiti, è in [`docs/ScoutEdge_Analytics_presentazione.pdf`](docs/ScoutEdge_Analytics_presentazione.pdf).
+Una presentazione di 16 slide, con scenario, architettura, esempi di conversazione, sfide, test e limiti, è in [`docs/ScoutEdge_Analytics_presentazione.pdf`](docs/ScoutEdge_Analytics_presentazione.pdf).
 
 ## Lo scenario
 
@@ -455,7 +455,7 @@ Le misure e le prove online sono in [`docs/TEST.md`](docs/TEST.md#simulazione-co
 │   ├── DESIGN_ORCHESTRATORE.md    design e prompt dell'orchestratore
 │   ├── TEST.md                    come testare, valori attesi
 │   ├── CHANGELOG_HANDBOOK.md      storico delle versioni del manuale
-│   └── ScoutEdge_Analytics_presentazione.pdf   presentazione (15 slide)
+│   └── ScoutEdge_Analytics_presentazione.pdf   presentazione (16 slide)
 ├── back end/
 │   ├── .env.example
 │   ├── package.json
