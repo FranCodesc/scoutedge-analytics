@@ -248,6 +248,27 @@ Punti emersi e corretti nel README:
 - **Python 3.13 su macOS**: il comando `python3` di sistema è la versione 3.9 e `python3.13` non esiste se non è stato installato; il README indica ora come installarlo e come controllare la versione.
 - **URL senza `http://` nel `.env`**: il back end parte lo stesso e l'errore compare alla prima domanda che usa il servizio; la tabella dei problemi descrive ora il sintomo reale.
 
+## Verifica da clone pulito (27 ottobre 2026)
+
+Prima della nuova consegna il repository pubblico è stato clonato in una cartella nuova, senza autenticazione, e installato seguendo solo il [README](../README.md), con i file `.env` preparati per la consegna. Dal 19 ottobre erano cambiati il back end (limite di frequenza) e le sue dipendenze (`express-rate-limit`, `zod` 4, `body-parser`); data agent e front end avevano lo stesso codice, quindi la batteria di regressione del data agent non è stata ripetuta. Chroma è il container già esistente, creato con lo stesso digest.
+
+| Passo | Esito |
+|---|---|
+| Clone dal repository pubblico | Solo i `.env.example`, nessun file `.env` |
+| `npm install` e `npm audit` del back end | Nessuna vulnerabilità |
+| `npm audit` del front end | Due avvisi nuovi su dipendenze di sviluppo, corretti (vedi sotto); `--omit=dev`: nessuna vulnerabilità |
+| `pip install -r requirements.txt` (Python 3.13.9) | Nessun errore |
+| Ingestione del manuale (`npm run ingest`) | 18 chunk |
+| Avvio del data agent | Dataframe pulito di forma (1185, 35) |
+| Avvio del back end senza variabili `RATE_LIMIT_*` | Limite di frequenza disattivato, come previsto |
+| `npm run test:api -- --solo-a` | 23 OK su 23 |
+| Le quattro domande della demo dall'interfaccia | Corrette |
+| File generati dall'installazione da committare | Nessuno |
+
+Punto emerso e corretto:
+
+- **Nuovi avvisi di sicurezza nel front end**: rispetto al 19 ottobre `npm audit` segnalava due avvisi nuovi di gravità alta, su `vite` (server di sviluppo) e su `zod` (usato da `eslint-plugin-react-hooks`), entrambi dipendenze di sviluppo. Sono stati corretti nel repository con `npm audit fix`, senza `--force` (`vite` 8.3.5, `zod` 4.6.7); il clone è stato riallineato con `git pull` e le prove successive sono state eseguite con le nuove versioni. Resta solo l'avviso moderato già noto, descritto nel [README del front end](../front%20end/README.md#limiti-noti).
+
 ## Prove del limite di frequenza in locale
 
 Il limite di frequenza su `POST /api/chat` ([Limite di frequenza](CONTRATTO_API.md#limite-di-frequenza)) è spento senza variabili d'ambiente e si prova a parte, con valori bassi, per non disturbare i test normali. Le richieste di prova usano un messaggio non valido, che il limite conta comunque perché sta prima della validazione del corpo.
