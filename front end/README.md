@@ -94,4 +94,5 @@ Il formato delle richieste e delle risposte, i codici di errore, i limiti (2000 
 ## Limiti noti
 
 - Le variabili `VITE_` sono pubbliche per costruzione (vedi sopra).
-- `npm audit` segnala una vulnerabilità moderata in una dipendenza di **sviluppo** (`postcss-selector-parser`, tramite `@tailwindcss/typography`): non arriva nel codice servito al browser (`npm audit --omit=dev` non segnala nulla). La correzione automatica richiederebbe `--force` e un downgrade del plugin, quindi non è applicata.
+- `npm audit` segnala 2 vulnerabilità moderate, che sono lo stesso avviso su una dipendenza di **sviluppo** (`postcss-selector-parser`, tramite `@tailwindcss/typography`): non arriva nel codice servito al browser (`npm audit --omit=dev` non segnala nulla). La correzione automatica richiederebbe `--force` e un downgrade del plugin, quindi non è applicata.
+- Il 27 ottobre 2026, durante la verifica da un clone nuovo prima della consegna, `npm audit` ha segnalato avvisi nuovi di gravità alta su `vite` (server di sviluppo) e su `zod` (usato da `eslint-plugin-react-hooks`), anche questi solo di sviluppo. Sono stati corretti con `npm audit fix`, senza `--force`: `vite` da 8.3.1 a 8.3.5 e `zod` da 4.6.5 a 4.6.7; dopo l'aggiornamento lint e build sono stati ripetuti senza errori.
