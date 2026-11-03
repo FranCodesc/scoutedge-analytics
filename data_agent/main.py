@@ -29,6 +29,7 @@ import pandas as pd
 from langchain_openai import ChatOpenAI
 
 from cleaning import clean_scouting_data, format_cleaning_report
+from schema import verifica_colonne_grezze, verifica_dati_puliti
 from agent import build_data_agent, CHARTS_DIR, pulisci_grafici
 
 load_dotenv()
@@ -45,12 +46,17 @@ state = {}
 async def lifespan(app: FastAPI):
     """Prepara le risorse all'avvio e le libera allo spegnimento.
 
-    Carica il CSV, lo pulisce con clean_scouting_data (che si ferma con un errore se i
-    controlli finali falliscono: meglio un avvio fallito che dati sbagliati) e conserva in
-    `state` dataframe pulito, modello e riepilogo delle correzioni.
+    Carica il CSV, verifica le colonne attese, lo pulisce con clean_scouting_data e controlla
+    il risultato con lo schema (schema.py): se qualcosa non torna il servizio non parte e
+    l'errore elenca tutte le violazioni (meglio un avvio fallito che dati sbagliati).
+    Conserva in `state` dataframe pulito, modello e riepilogo delle correzioni.
     """
     df_raw = pd.read_csv(BASE_DIR / ".." / "data" / "scouting_data.csv")
+    colonne_in_piu = verifica_colonne_grezze(df_raw)
+    if colonne_in_piu:
+        print(f"Attenzione: colonne non previste nel CSV: {', '.join(colonne_in_piu)}")
     df_clean, cleaning_report = clean_scouting_data(df_raw)
+    verifica_dati_puliti(df_clean)
 
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 

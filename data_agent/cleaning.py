@@ -80,7 +80,7 @@ def _parse_market_value(value):
 
 def _parse_mixed_date(value):
     """Converte una data in Timestamp. Nel file grezzo convivono AAAA-MM-GG e GG/MM/AAAA.
-    Limite noto: un valore mancante (NaN) solleverebbe un errore (oggi non succede)."""
+    Un valore mancante (NaN) non solleva errori: diventa NaT, e lo segnala poi lo schema."""
     value = str(value).strip()
     # prova prima il formato ISO, poi quello GG/MM/AAAA
     try:
@@ -264,14 +264,8 @@ def clean_scouting_data(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     report['righe_finali'] = len(df)
     report['giocatori_unici'] = int(df['player_id'].nunique())
 
-    # controlli di sicurezza
-    # raise e non assert: gli assert si disattivano con "python -O".
-    # Il cleaning gira all'avvio di FastAPI: se un controllo fallisce il servizio non
-    # parte, invece di lavorare su dati sbagliati(importante).
-    if df['club'].nunique() != len(CLUB_CANONICI):
-        raise ValueError("Il cleaning dei club non ha prodotto i club attesi")
-    if df.duplicated().any():
-        raise ValueError("Restano righe duplicate dopo il cleaning")
+    # I controlli sul risultato (club attesi, righe duplicate, tipi, intervalli, relazioni
+    # tra colonne) stanno in schema.py e girano all'avvio, dopo questa funzione.
     return df, report
 
 

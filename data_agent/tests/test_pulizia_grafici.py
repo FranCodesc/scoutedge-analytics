@@ -83,4 +83,3 @@ def test_bordo_delle_due_ore(cartella_grafici):
 
     assert al_limite.exists()  # vecchio esattamente 2 ore: si cancella solo ciò che è più vecchio
     assert not oltre.exists()
-    

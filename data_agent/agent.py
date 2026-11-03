@@ -73,6 +73,7 @@ NOME_GRAFICO = re.compile(r"chart_[0-9a-f]{8}\.png")
 # per esteso con il punto delle migliaia invece della notazione scientifica (es. 1e7).
 SOGLIA_ASSE_GRANDE = 1_000_000
 
+
 def _cancella(percorso):
     """Cancella un file; se è già sparito o non si può cancellare, l'analisi non si ferma."""
     try:
@@ -111,6 +112,7 @@ def pulisci_grafici(spazio_per_nuovo=0, adesso=None):
     in_eccesso = len(recenti) - (MAX_GRAFICI - spazio_per_nuovo)
     for data, percorso in recenti[:max(in_eccesso, 0)]:
         _cancella(percorso)
+
 
 def _formatta_assi_grandi(fig):
     """Scrive per esteso (es. 17.500.000) i numeri degli assi che matplotlib mostrerebbe con

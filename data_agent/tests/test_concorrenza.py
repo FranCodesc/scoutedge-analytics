@@ -136,4 +136,3 @@ def test_lock_rilasciato_dopo_un_errore(cartella_grafici, monkeypatch):
     errore = tool.invoke({"code": "1/0"})
     assert errore.startswith("Errore nell'esecuzione")
     assert "ok" in tool.invoke({"code": "print('ok')"})
-    
