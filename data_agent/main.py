@@ -29,7 +29,7 @@ import pandas as pd
 from langchain_openai import ChatOpenAI
 
 from cleaning import clean_scouting_data, format_cleaning_report
-from agent import build_data_agent, CHARTS_DIR
+from agent import build_data_agent, CHARTS_DIR, pulisci_grafici
 
 load_dotenv()
 
@@ -60,6 +60,7 @@ async def lifespan(app: FastAPI):
     state["df"] = df_clean
     state["llm"] = llm
     state["cleaning_summary"] = format_cleaning_report(cleaning_report)
+    pulisci_grafici()  # all'avvio, prima di ricevere richieste: nessun lock necessario
     print(f"Data agent pronto — dataframe caricato: {df_clean.shape}")
 
     yield  # l'app gira qui

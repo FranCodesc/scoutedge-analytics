@@ -21,6 +21,9 @@ import io
 import contextlib
 import ast
 import uuid
+import threading
+import re
+import time
 from pathlib import Path
 
 import matplotlib
@@ -48,10 +51,66 @@ CHARTS_DIR.mkdir(exist_ok=True) # crea cartella se manca
 # esplicita serve a evitare che il modello riempia i vuoti inventando i dati mancanti.
 MAX_TOOL_OUTPUT = 6000
 
+# Tempo massimo di attesa per entrare nell'esecuzione del codice del modello. Il codice dura
+# di norma meno di un secondo: se un'altra richiesta tiene il lock più a lungo, è meglio
+# rispondere con un errore che far aspettare (il back end ha un timeout di 90 s).
+ATTESA_MASSIMA_LOCK_S = 30
+
+# Mentre esegue il codice del modello, il tool sostituisce per tutto il processo
+# savefig/close/show di matplotlib e sys.stdout, e usa le figure globali di pyplot e le
+# opzioni globali di pandas: due richieste insieme si sovrascriverebbero a vicenda.
+# Per questo l'esecuzione è serializzata da questo lock; la chiamata al modello
+# resta fuori e continua a funzionare in parallelo.
+_lock_esecuzione = threading.Lock()
+
+# Conservazione dei grafici: i PNG più vecchi di 2 ore o oltre i 200 più recenti si cancellano,
+# per non riempire il disco. Solo i file con il nome esatto dei grafici del tool.
+CONSERVAZIONE_GRAFICI_S = 2 * 60 * 60
+MAX_GRAFICI = 200
+NOME_GRAFICO = re.compile(r"chart_[0-9a-f]{8}\.png")
+
 # Valore assoluto, sull'intervallo visibile di un asse, da cui in poi i numeri si scrivono
 # per esteso con il punto delle migliaia invece della notazione scientifica (es. 1e7).
 SOGLIA_ASSE_GRANDE = 1_000_000
 
+def _cancella(percorso):
+    """Cancella un file; se è già sparito o non si può cancellare, l'analisi non si ferma."""
+    try:
+        percorso.unlink()
+    except OSError:
+        pass
+
+
+def pulisci_grafici(spazio_per_nuovo=0, adesso=None):
+    """Cancella i grafici troppo vecchi o in eccesso in CHARTS_DIR.
+
+    Si toccano solo i file chart_xxxxxxxx.png. `spazio_per_nuovo` lascia libero il posto
+    per i file che stanno per essere salvati; `adesso` serve ai test per fissare l'ora.
+    Va chiamata con il lock già preso (o all'avvio, quando non ci sono richieste)."""
+    if adesso is None:
+        adesso = time.time()
+
+    grafici = []
+    for percorso in CHARTS_DIR.iterdir():
+        if NOME_GRAFICO.fullmatch(percorso.name):
+            try:
+                grafici.append((percorso.stat().st_mtime, percorso))
+            except OSError:
+                pass  # sparito nel frattempo
+
+    # 1) troppo vecchi
+    recenti = []
+    for data, percorso in grafici:
+        if data < adesso - CONSERVAZIONE_GRAFICI_S:
+            _cancella(percorso)
+        else:
+            recenti.append((data, percorso))
+
+    # 2) in eccesso: si tolgono i più vecchi
+    recenti.sort(key=lambda voce: (voce[0], voce[1].name))
+    in_eccesso = len(recenti) - (MAX_GRAFICI - spazio_per_nuovo)
+    for data, percorso in recenti[:max(in_eccesso, 0)]:
+        _cancella(percorso)
 
 def _formatta_assi_grandi(fig):
     """Scrive per esteso (es. 17.500.000) i numeri degli assi che matplotlib mostrerebbe con
@@ -91,16 +150,7 @@ def make_python_tool(df):
     # ambito e cercano i nomi nei globals) non vedrebbero 'df' e 'pd': NameError.
     namespace = {"df": df.copy(), "pd": pd, "plt": plt, "sns": sns}
 
-    @tool
-    def python_repl(code: str) -> str:
-        """Esegue codice Python per analizzare il dataframe (disponibile come variabile 'df').
-        Disponibili anche 'pd', 'plt' (matplotlib.pyplot) e 'sns' (seaborn) per creare grafici:
-        se il codice genera una figura matplotlib, viene salvata automaticamente come PNG
-        (non serve chiamare plt.savefig() né plt.show()).
-        Le variabili definite in una chiamata restano disponibili nelle chiamate successive
-        (come in un notebook Jupyter).
-        Si comporta come un REPL: se l'ultima riga è un'espressione, il suo valore viene mostrato
-        automaticamente, altrimenti usa print()."""
+    def _esegui(code: str) -> str:
         output = io.StringIO()
         chart_note = ""
         try:
@@ -152,6 +202,7 @@ def make_python_tool(df):
                 filename = f"chart_{uuid.uuid4().hex[:8]}.png"
                 # plt.savefig salva la figura corrente: è quella da sistemare
                 _formatta_assi_grandi(plt.gcf())
+                pulisci_grafici(spazio_per_nuovo=1)
                 plt.savefig(CHARTS_DIR / filename, bbox_inches="tight")
                 plt.close("all")
                 chart_note = f"\n[Grafico salvato correttamente: {filename}]"
@@ -169,6 +220,24 @@ def make_python_tool(df):
             testo = (testo[:MAX_TOOL_OUTPUT]
                      + "\n[Output troncato: stampa solo le righe e le colonne necessarie alla risposta.]")
         return testo + chart_note
+
+    @tool
+    def python_repl(code: str) -> str:
+        """Esegue codice Python per analizzare il dataframe (disponibile come variabile 'df').
+        Disponibili anche 'pd', 'plt' (matplotlib.pyplot) e 'sns' (seaborn) per creare grafici:
+        se il codice genera una figura matplotlib, viene salvata automaticamente come PNG
+        (non serve chiamare plt.savefig() né plt.show()).
+        Le variabili definite in una chiamata restano disponibili nelle chiamate successive
+        (come in un notebook Jupyter).
+        Si comporta come un REPL: se l'ultima riga è un'espressione, il suo valore viene mostrato
+        automaticamente, altrimenti usa print()."""
+        if not _lock_esecuzione.acquire(timeout=ATTESA_MASSIMA_LOCK_S):
+            return ("Errore: il servizio di analisi è occupato con un'altra richiesta. "
+                    "Riprova tra qualche istante.")
+        try:
+            return _esegui(code)
+        finally:
+            _lock_esecuzione.release()
     return python_repl
 
 
