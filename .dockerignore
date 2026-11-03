@@ -18,3 +18,10 @@ data_agent/charts/*.png
 .vscode
 docs
 data_agent/prototype.ipynb
+
+# Test e strumenti di sviluppo del data agent: non servono in produzione
+# (l'immagine installa solo requirements.txt).
+data_agent/tests
+data_agent/pytest.ini
+data_agent/requirements-dev.txt
+**/.pytest_cache
