@@ -6,7 +6,7 @@ Interfaccia web di chat dell'assistente di ScoutEdge Analytics (progetto finale 
 
 - Chat con memoria della conversazione (il `sessionId` è tenuto dal back end; qui vive solo in memoria).
 - Risposte formattate in Markdown (tabelle, elenchi, grassetto), **senza HTML grezzo**.
-- Grafici generati dal data agent: nel fumetto della risposta e, su desktop (da 1024 px), nel pannello laterale con l'ultimo grafico, con "Ingrandisci" e "Scarica". Il grafico del pannello si ingrandisce anche con un clic. Su telefono il pannello è nascosto e il grafico nel fumetto non si ingrandisce.
+- Grafici generati dal data agent: nel fumetto della risposta e, su desktop (da 1024 px), nel pannello laterale con l'ultimo grafico, con "Ingrandisci" e "Scarica". Il grafico del pannello si ingrandisce anche con un clic. Su telefono il pannello è nascosto e il grafico nel fumetto non si ingrandisce. Se l'immagine di un grafico non si carica (file non più disponibile o servizio spento) compare un testo di riserva al posto dell'icona di immagine rotta, anche nella finestra di ingrandimento.
 - Etichette sotto ogni risposta che mostrano da dove arriva: `📄 Handbook — <sezione>` per ogni sezione citata del manuale, `📄 Handbook (nessuna sezione citata)` se il manuale è stato consultato ma nessuna sezione è citata, oppure `📊 Analisi dati`.
 - Finestra "Note" (pulsante in alto) con una breve descrizione del progetto, dell'architettura e dei limiti, e l'autore.
 - Indicatore di attesa con un avviso dopo 10 secondi ("le analisi sui dati possono richiedere fino a un minuto"), input bloccato durante l'elaborazione (una sola richiesta alla volta), avviso se si è offline.
@@ -16,7 +16,7 @@ Interfaccia web di chat dell'assistente di ScoutEdge Analytics (progetto finale 
 
 ## Requisiti
 
-- Node.js 20.19 o successivo (oppure 22.12 o successivo), richiesto da Vite 8.
+- Node.js 20.19 o successivo (oppure 22.12 o successivo), richiesto da Vite 8. Per eseguire i test (`npm test`) servono Node.js 22.13 o successivo (versioni 22, 24 o 26).
 - Il back end di ScoutEdge in esecuzione (di default su `http://localhost:3001`). Per avviare tutti i servizi nell'ordine giusto vedi il README nella radice del repository.
 
 ## Installazione e avvio
@@ -47,12 +47,13 @@ Il back end deve accettare l'origine del front end (variabile `FRONTEND_ORIGIN` 
 
 ## Script
 
-| Comando           | Cosa fa                                                 |
-| ----------------- | ------------------------------------------------------- |
-| `npm run dev`     | server di sviluppo con ricarica automatica (porta 5173) |
-| `npm run build`   | build di produzione in `dist/`                          |
-| `npm run preview` | serve la build di produzione in locale                  |
-| `npm run lint`    | controllo ESLint                                        |
+| Comando           | Cosa fa                                                          |
+| ----------------- | ---------------------------------------------------------------- |
+| `npm run dev`     | server di sviluppo con ricarica automatica (porta 5173)          |
+| `npm run build`   | build di produzione in `dist/`                                   |
+| `npm run preview` | serve la build di produzione in locale                           |
+| `npm run lint`    | controllo ESLint                                                 |
+| `npm test`        | test automatici (Vitest): nessuna rete, nessun back end acceso   |
 
 ## Struttura
 
@@ -72,6 +73,8 @@ src/
     ├── ChartsPanel.jsx, ChartDialog.jsx, NotesDialog.jsx
     ├── ChatInput.jsx, Welcome.jsx, Thinking.jsx, ErrorCard.jsx
     └── Preloader.jsx, PitchBackground.jsx, Ball.jsx, Avatar.jsx
+test/                        test automatici e relativa preparazione (setup.js)
+vitest.config.js             configurazione dei test (separata da vite.config.js)
 ```
 
 ## Scelte principali
@@ -87,6 +90,17 @@ src/
 - **Accessibilità**: la lista dei messaggi è un `role="log"` con `aria-live`, "riduci movimento" è rispettato (animazioni e scroll), il pannello dei grafici usa un `<dialog>` nativo per l'ingrandimento.
 - Il pannello laterale dei grafici è visibile da 1024 px; su schermi più piccoli il grafico compare solo nella risposta.
 
+## Test
+
+`npm test` esegue la suite con Vitest, jsdom e Testing Library. Non servono rete né back end acceso, quindi gira anche in integrazione continua. Le dipendenze dei test sono solo di sviluppo, a versione fissata, e la configurazione sta in `vitest.config.js`, separata da `vite.config.js`: la build di produzione non cambia.
+
+La suite copre:
+
+- **Client API** (`src/api/chatApi.js`, con `fetch` simulato): risposta 200, errori nel formato del contratto (compreso `RATE_LIMITED`, con `error.message` mostrato così com'è), corpo non JSON, rete assente, timeout a 130 s con orologio finto e validazione degli indirizzi dei grafici.
+- **Conversazione** (`useChat`): un solo invio alla volta, `sessionId` sempre sovrascritto con quello ricevuto, avviso di sessione scaduta, "Nuova chat", messaggio dell'utente visibile anche in caso di errore, risposte tardive scartate e "Riprova".
+- **Componenti**: Markdown senza HTML grezzo né immagini, etichette di strumenti e fonti, scheda di errore.
+- **Grafici**: testo di riserva quando l'immagine non si carica, nel fumetto, nel pannello e nella finestra di ingrandimento, senza nuove richieste al back end.
+
 ## Contratto con il back end
 
 Il formato delle richieste e delle risposte, i codici di errore, i limiti (2000 caratteri per messaggio, 20 messaggi per sessione, timeout) e gli obblighi del front end sono descritti nel contratto API: [`../docs/CONTRATTO_API.md`](../docs/CONTRATTO_API.md).
@@ -94,5 +108,9 @@ Il formato delle richieste e delle risposte, i codici di errore, i limiti (2000 
 ## Limiti noti
 
 - Le variabili `VITE_` sono pubbliche per costruzione (vedi sopra).
-- `npm audit` segnala 2 vulnerabilità moderate, che sono lo stesso avviso su una dipendenza di **sviluppo** (`postcss-selector-parser`, tramite `@tailwindcss/typography`): non arriva nel codice servito al browser (`npm audit --omit=dev` non segnala nulla). La correzione automatica richiederebbe `--force` e un downgrade del plugin, quindi non è applicata.
+- `npm audit` segnala 8 vulnerabilità moderate, tutte su dipendenze di **sviluppo**: non arrivano nel codice servito al browser (`npm audit --omit=dev` non segnala nulla). Sono due avvisi, non corretti per questi motivi:
+  - `postcss-selector-parser` (consumo eccessivo di CPU con selettori molto lunghi), tramite `@tailwindcss/typography`. La correzione automatica richiede `--force` e un downgrade del plugin alla versione 0.5.4, quindi non è applicata.
+  - `minimatch` (denial of service con pattern costruiti ad arte), tramite `eslint` e i suoi pacchetti (`@eslint/config-array`, `@eslint/js`, `@eslint-community/eslint-utils`, `eslint-plugin-react-refresh`). Non esiste ancora una versione corretta compatibile: l'unica proposta di `--force` è un downgrade di ESLint dalla versione 10 alla 9. ESLint legge i pattern dalla configurazione del progetto, non da input esterni.
+
+  `npm audit fix` senza `--force` ha aggiornato soltanto `eslint` da 10.11.0 a 10.14.0. Le dipendenze dei test (Vitest, jsdom, Testing Library) non aggiungono avvisi. Da riesaminare quando escono versioni corrette.
 - Il 27 ottobre 2026, durante la verifica da un clone nuovo prima della consegna, `npm audit` ha segnalato avvisi nuovi di gravità alta su `vite` (server di sviluppo) e su `zod` (usato da `eslint-plugin-react-hooks`), anche questi solo di sviluppo. Sono stati corretti con `npm audit fix`, senza `--force`: `vite` da 8.3.1 a 8.3.5 e `zod` da 4.6.5 a 4.6.7; dopo l'aggiornamento lint e build sono stati ripetuti senza errori.
