@@ -15,9 +15,9 @@
  */
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
-import { searchHandbook } from "../services/ragService.js";
+import { searchHandbook as realSearchHandbook } from "../services/ragService.js";
 import {
-  analyzeWithDataAgent,
+  analyzeWithDataAgent as realAnalyzeWithDataAgent,
   DataAgentError,
 } from "../services/dataAgentService.js";
 
@@ -64,13 +64,19 @@ export function filterRelevantPassages(passages) {
 /**
  * Crea i tool di UN turno e lo stato che raccolgono.
  *
+ * @param {object} [deps]  servizi usati dai tool; nei test sono versioni simulate
+ * @param {Function} [deps.searchHandbook]
+ * @param {Function} [deps.analyzeWithDataAgent]
  * @returns {{
  *   tools: Array,
  *   runToolCall: (toolCall: {name: string, args: object}) => Promise<string>,
  *   getCollected: () => {toolsUsed: string[], sources: string[], chartUrl: string|null}
  * }}
  */
-export function createTurnTools() {
+export function createTurnTools({
+  searchHandbook = realSearchHandbook,
+  analyzeWithDataAgent = realAnalyzeWithDataAgent,
+} = {}) {
   // Stato del turno: vive solo in questa closure.
   const toolsUsed = [];
   const sources = [];
@@ -135,8 +141,7 @@ export function createTurnTools() {
         // non lo annuncia dalla memoria (v1.2).
         let text = `Risultato dell'analisi:\n${result.answer}`;
         if (result.chartUrl) {
-          text +=
-            "\n(È stato generato un grafico: lo trovi qui sotto.)";
+          text += "\n(È stato generato un grafico: lo trovi qui sotto.)";
         } else if (chart) {
           text += "\n(Il grafico richiesto non è stato generato.)";
         }

@@ -1,0 +1,138 @@
+{
+  "regola": "Un turno ha i VALORI corretti se la risposta contiene tutti i numeri e i testi attesi, nessun valore vietato e, quando previsto, un grafico (chartUrl non nullo). I numeri si cercano in tutte le grafie dello stesso valore (18.680.000, 18,680,000, 18680000; 65.11, 65,11) senza tolleranza: 65.1 non vale 65.11 e 72 non vale 72.5. Un turno ha gli STRUMENTI corretti se l'insieme di toolsUsed coincide con quello atteso, senza guardare l'ordine. I due esiti sono contati separatamente. Nelle conversazioni ogni turno è valutato a parte, con una sessione nuova a ogni ripetizione. I valori attesi vengono da docs/TEST.md (tabella Valori attesi). Per i tre difensori centrali si cercano i cognomi dei giocatori e non i loro id, perché le risposte riportano i nomi.",
+  "domande": [
+    {
+      "id": "sla_alta",
+      "turni": [
+        {
+          "messaggio": "Qual è il tempo di prima risposta per una richiesta ad alta priorità?",
+          "attese": { "testi": ["\\b2\\s+ore\\b"], "strumenti": ["search_handbook"] }
+        }
+      ]
+    },
+    {
+      "id": "escalation_sla",
+      "turni": [
+        {
+          "messaggio": "Cosa succede se lo SLA non viene rispettato?",
+          "attese": { "testi": ["Team Lead", "\\b4\\s+ore\\b"], "strumenti": ["search_handbook"] }
+        }
+      ]
+    },
+    {
+      "id": "calcolo_scout_rating",
+      "turni": [
+        {
+          "messaggio": "Come si calcola lo scout_rating?",
+          "attese": { "testi": ["40\\s?%", "\\b99\\b"], "strumenti": ["search_handbook"] }
+        }
+      ]
+    },
+    {
+      "id": "numero_giocatori",
+      "turni": [
+        {
+          "messaggio": "Quanti giocatori ci sono nel dataset?",
+          "attese": { "numeri": ["130"], "strumenti": ["analyze_data"] }
+        }
+      ]
+    },
+    {
+      "id": "top10_con_grafico",
+      "turni": [
+        {
+          "messaggio": "Quali sono i 10 giocatori con il valore di mercato attuale più alto? Mostrami anche un grafico.",
+          "attese": { "numeri": ["18680000"], "testi": ["Sato Jun"], "grafico": true, "strumenti": ["analyze_data"] }
+        }
+      ]
+    },
+    {
+      "id": "media_per_stagione",
+      "turni": [
+        {
+          "messaggio": "Qual è lo scout_rating medio per stagione?",
+          "attese": { "numeri": ["66.59", "66.18", "65.11"], "strumenti": ["analyze_data"] }
+        }
+      ]
+    },
+    {
+      "id": "rating_giocatore_70",
+      "turni": [
+        {
+          "messaggio": "Qual è il rating attuale del giocatore 70?",
+          "attese": { "numeri": ["66"], "strumenti": ["analyze_data"] }
+        }
+      ]
+    },
+    {
+      "id": "cb_metodologia_e_dati",
+      "turni": [
+        {
+          "messaggio": "Secondo la metodologia, quali metriche contano di più per i difensori centrali? Poi mostrami i 3 CB con il duels_won_pct attuale più alto.",
+          "attese": {
+            "numeri": ["72.0", "67.9", "64.1"],
+            "testi": ["\\bPereira\\b", "\\bBalaguer\\b", "\\bIto\\b"],
+            "strumenti": ["search_handbook", "analyze_data"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "conversazione_stagione_precedente",
+      "turni": [
+        {
+          "messaggio": "Qual è lo scout_rating medio nell'ultima stagione?",
+          "attese": { "numeri": ["65.11", "405"], "vietati": ["65.21"], "strumenti": ["analyze_data"] }
+        },
+        {
+          "messaggio": "E nella stagione precedente?",
+          "attese": { "numeri": ["66.18", "400"], "strumenti": ["analyze_data"] }
+        }
+      ]
+    },
+    {
+      "id": "conversazione_portieri",
+      "turni": [
+        {
+          "messaggio": "Qual è lo scout_rating medio nell'ultima stagione?",
+          "attese": { "numeri": ["65.11", "405"], "vietati": ["65.21"], "strumenti": ["analyze_data"] }
+        },
+        {
+          "messaggio": "E per i portieri?",
+          "attese": { "numeri": ["68.91", "46"], "vietati": ["68.29"], "strumenti": ["analyze_data"] }
+        }
+      ]
+    },
+    {
+      "id": "conversazione_2024_25",
+      "turni": [
+        {
+          "messaggio": "Qual è lo scout_rating medio nella stagione 2024/25?",
+          "attese": { "numeri": ["66.18", "400"], "strumenti": ["analyze_data"] }
+        },
+        {
+          "messaggio": "E in quella precedente?",
+          "attese": { "numeri": ["66.59", "380"], "strumenti": ["analyze_data"] }
+        }
+      ]
+    },
+    {
+      "id": "fuori_ambito",
+      "turni": [
+        {
+          "messaggio": "Qual è la capitale della Francia?",
+          "attese": { "strumenti": [] }
+        }
+      ]
+    },
+    {
+      "id": "saluto",
+      "turni": [
+        {
+          "messaggio": "Ciao!",
+          "attese": { "strumenti": [] }
+        }
+      ]
+    }
+  ]
+}

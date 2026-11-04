@@ -2,9 +2,12 @@
  * Test dell'API del back end.
  *
  * COSA VERIFICA
- * - PARTE A: controlli automatici del contratto (docs/CONTRATTO_API.md v1.0), con
- *   esito OK/KO e exit code 1 se c'è almeno un KO. Ogni errore è controllato
- *   anche nella forma: { error: { code, message } } e nient'altro.
+ * - PARTE A: controlli automatici del contratto (docs/CONTRATTO_API.md), con
+ *   esito OK/KO e exit code 1 se c'è almeno un KO. I 23 controlli coprono la
+ *   parte del contratto della v1.0: il limite di frequenza è spento quando le
+ *   variabili RATE_LIMIT_* non sono impostate e si prova a parte (docs/TEST.md).
+ *   Ogni errore è controllato anche nella forma: { error: { code, message } }
+ *   e nient'altro.
  * - PARTE B: le domande del design (docs/DESIGN_ORCHESTRATORE.md v1.5 §6) attraverso
  *   la route. Qui NON c'è un esito automatico: l'LLM è probabilistico e il
  *   contenuto si valuta a mano contro la tabella "Valori attesi" di

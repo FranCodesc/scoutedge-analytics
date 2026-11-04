@@ -7,7 +7,9 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "ingest": "node scripts/ingestHandbook.js",
-    "test:api": "node scripts/testApi.js"
+    "test": "node --test --test-timeout=30000 \"test/**/*.test.js\"",
+    "test:api": "node scripts/testApi.js",
+    "eval": "node eval/run.js"
   },
   "keywords": [],
   "author": "",
