@@ -25,3 +25,11 @@ data_agent/tests
 data_agent/pytest.ini
 data_agent/requirements-dev.txt
 **/.pytest_cache
+
+# Test e strumenti di sviluppo di back end e front end: non servono in produzione.
+# La fase di build del front end installa comunque vitest e jsdom, ma
+# nell'immagine finale arriva solo dist/.
+back end/test
+back end/eval
+front end/test
+front end/vitest.config.js
