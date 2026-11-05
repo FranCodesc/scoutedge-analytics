@@ -1,5 +1,5 @@
 /**
- * Client per il back end di ScoutEdge (contratto API v1.0).
+ * Client per il back end di ScoutEdge (docs/CONTRATTO_API.md).
  * È l'unico modulo del front end che parla con il server.
  */
 

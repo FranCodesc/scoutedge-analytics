@@ -1,6 +1,5 @@
 /**
  * Avatar dell'assistente, accanto a risposte, attesa ed errori.
- * Nel prototipo questo SVG era copiato in tre punti: qui è uno solo.
  */
 export default function Avatar() {
   return (

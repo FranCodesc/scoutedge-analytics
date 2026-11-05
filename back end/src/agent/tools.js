@@ -40,8 +40,8 @@ const NO_PASSAGES =
 /**
  * Frase che il CODICE (non il modello) aggiunge alla domanda per il data
  * agent quando l'utente ha chiesto un grafico. Definita in un solo punto: è
- * ciò che rende la richiesta di grafico deterministica (v1.2). Con la v1.1,
- * affidata al testo libero del modello, la richiesta spariva 6 volte su 6.
+ * ciò che rende la richiesta di grafico deterministica
+ * (docs/decisions/01-orchestrazione-nel-back-end.md).
  */
 export const CHART_REQUEST_SENTENCE =
   "Genera anche un grafico adatto a mostrare il risultato.";
@@ -138,7 +138,7 @@ export function createTurnTools({
         if (result.chartUrl) chartUrl = result.chartUrl;
 
         // Il risultato dichiara sempre l'esito del grafico, così il modello
-        // non lo annuncia dalla memoria (v1.2).
+        // non lo annuncia dalla memoria.
         let text = `Risultato dell'analisi:\n${result.answer}`;
         if (result.chartUrl) {
           text += "\n(È stato generato un grafico: lo trovi qui sotto.)";

@@ -13,8 +13,10 @@ main.py chiama build_data_agent a ogni richiesta: ogni domanda ha quindi uno sta
 pulito, senza variabili o filtri lasciati da richieste precedenti.
 
 Limite di sicurezza noto: il codice generato dal modello viene eseguito con exec/eval
-nel processo del servizio, senza sandbox. È accettabile solo in un contesto locale e
-didattico (vedi la sezione sulla sicurezza nella documentazione del progetto).
+nel processo del servizio, senza sandbox, e quel processo conosce la chiave OpenAI.
+Nella demo online il rischio è ridotto, non eliminato, da difese a strati: servizio in
+ascolto solo su 127.0.0.1, limite di frequenza, chiave dedicata con tetto di spesa,
+utente non root (vedi la sezione sulla sicurezza nella documentazione del progetto).
 """
 
 import io
@@ -45,10 +47,9 @@ from langchain.agents import create_agent
 CHARTS_DIR = Path(__file__).resolve().parent / "charts"
 CHARTS_DIR.mkdir(exist_ok=True) # crea cartella se manca
 
-# Limite (in caratteri) del testo che il tool restituisce al modello. Dopo l'introduzione della
-# stampa completa dei DataFrame un risultato grande potrebbe far crescere molto i token:
-# oltre il limite il testo viene troncato e in fondo si aggiunge una nota fissa. La nota
-# esplicita serve a evitare che il modello riempia i vuoti inventando i dati mancanti.
+# Limite (in caratteri) del testo restituito al modello: i DataFrame si stampano con tutte le
+# colonne e un risultato grande farebbe crescere i token. Oltre il limite il testo si tronca con
+# una nota fissa, perché il modello non riempia i vuoti inventando i dati.
 MAX_TOOL_OUTPUT = 6000
 
 # Tempo massimo di attesa per entrare nell'esecuzione del codice del modello. Il codice dura
@@ -166,20 +167,12 @@ def make_python_tool(df):
 
             # Tutto ciò che il codice stampa viene catturato in `output` invece di finire sul
             # terminale del server: è il testo che il tool restituisce al modello.
-            # Il contesto pandas mostra TUTTE le colonne. Con la rappresentazione
-            # abbreviata di default, le 35 colonne di df finivano in parte nei "...": il modello
-            # non vedeva `market_value_eur` e inventava il valore (diagnosi: "valore attuale
-            # più alto" → 15.000.000 o 5.000.000 invece di 18.680.000). La larghezza di 250
-            # caratteri evita che le righe vengano spezzate male nell'output.
+            # Il contesto pandas mostra tutte le colonne: con la forma abbreviata il modello
+            # inventava i valori delle colonne nascoste. 250 caratteri evitano righe spezzate male.
             #
-            # Il salvataggio dei grafici è riservato al tool. Se il codice del modello
-            # chiama plt.savefig/fig.savefig scrive un PNG fuori da charts/ (con un nome suo),
-            # e se poi chiama plt.close() la figura sparisce prima che il tool la veda: nessun
-            # grafico e nessuna nota (grafico mancante in modo intermittente). Per tutta
-            # l'esecuzione del codice del modello queste funzioni non fanno nulla, così ogni
-            # figura creata finisce in charts/ con il nome chart_xxxxxxxx.png. Non è una
-            # sandbox: il modello può comunque scrivere file in altri modi (limite di
-            # sicurezza noto del python_repl).
+            # Il salvataggio dei grafici è riservato al tool: durante l'esecuzione savefig, close
+            # e show non fanno nulla, così ogni figura finisce in charts/ con il nome del tool.
+            # Non è una sandbox (docs/decisions/06-esecuzione-del-codice-generato.md).
             _nulla = lambda *args, **kwargs: None
             with contextlib.redirect_stdout(output), \
                  pd.option_context("display.max_columns", None, "display.width", 250), \
@@ -259,66 +252,9 @@ def build_data_agent(df, llm, cleaning_summary):
 
     python_tool = make_python_tool(df)
 
-    # System prompt: ogni sezione è nata per correggere un comportamento sbagliato osservato
-    # nei test, quindi l'ordine e la formulazione contano. Principio emerso dal lavoro sul
-    # controllo delle osservazioni nello stesso giorno: le regole condizionali ("se... allora...") il modello non le esegue in
-    # modo affidabile, mentre le procedure con codice esatto da lanciare sempre e un ordine
-    # fisso della risposta sì. Per questo gli esempi di codice usano segnaposto espliciti
-    # (<...>) e non valori reali, che il modello potrebbe copiare.
-    #
-    # Sezioni, in ordine:
-    # 1. Colonne di 'df': evita che il modello inventi nomi di colonne.
-    # 2. Struttura dei dati: ogni riga è un'osservazione nel tempo, quindi un giocatore compare
-    #    più volte e metriche come valore di mercato e rating cambiano.
-    # 3. Chiave del giocatore: sempre 'player_id', mai 'player_name' (omonimie).
-    # 4. Periodo oppure stato "attuale". Prima si distingue: se la domanda indica un periodo
-    #    (stagione, anno, mese, intervallo di date), si filtra df sul periodo e si usano TUTTE le
-    #    sue osservazioni (regressione osservata: "scout_rating medio nell'ultima stagione" veniva
-    #    calcolato sulle ultime osservazioni dei giocatori, 65.21, invece che su tutte le 405
-    #    della stagione, 65.11). Se invece si chiede lo stato attuale senza periodo, vale la
-    #    procedura esatta con ordinamento stabile (kind='stable'), anche per massimi, minimi e
-    #    classifiche su tutti i giocatori (bug osservato: "valore attuale più alto nel dataset"
-    #    restituiva il massimo storico). Il criterio è deterministico: a parità di data vince
-    #    la riga registrata per ultima.
-    # 4bis. "Osservazione più recente". La domanda dei 3 difensori centrali "nell'osservazione
-    #    più recente" sbagliava circa 2 volte su 10: il modello la leggeva come la sola data più
-    #    recente del dataset (poche righe, un solo difensore) invece dell'ultima osservazione di
-    #    ogni giocatore. Un tentativo scartato: un dataframe precalcolato (df_attuale), per le
-    #    regressioni che ha causato (il controllo delle osservazioni nello stesso giorno girava sul dataframe sbagliato, le domande su
-    #    un periodo venivano calcolate sullo stato attuale). La definizione esplicita nel prompt
-    #    resta: sui difensori centrali non ha dato un miglioramento misurabile (6/8 con la frase,
-    #    8/8 senza, campioni troppo piccoli). L'errore su "valore di mercato attuale più alto"
-    #    (5.000.000 o 15.000.000 invece di 18.680.000) non dipendeva dalla frase ma dall'output
-    #    abbreviato del tool, che nascondeva la colonna del valore (vedi python_repl). L'errore
-    #    intermittente sui difensori centrali resta un limite noto.
-    # 5. Controllo delle osservazioni nello stesso giorno: per giocatori specifici stampa le osservazioni della data più recente e
-    #    un elenco "GIOCATORI DA SEGNALARE" calcolato dal codice (gli id con più righe in quella
-    #    data). Ordine fisso della risposta: prima il valore attuale, poi, solo per gli id
-    #    dell'elenco, la segnalazione. Storia dei difetti: senza ordine fisso il modello ometteva
-    #    il valore; senza limite elencava la storia del giocatore; con la regola condizionale
-    #    "se compare più di una riga" la segnalazione veniva scritta anche con una riga sola
-    #    (giocatore 33), quindi la decisione è passata dal modello al codice. Le righe del
-    #    controllo restano sullo stesso sottoinsieme: confrontare serie con indici diversi dava
-    #    ValueError e il modello riscriveva il controllo a modo suo. L'elenco usa .tolist() perché
-    #    con numpy 2 stamperebbe [np.int64(70)] invece di [70]. La riga "GIOCATORI DA SEGNALARE"
-    #    serve solo al modello: senza il divieto la riportava nella risposta, a volte anche
-    #    quando il controllo non era stato eseguito.
-    #    Limite noto: con più giocatori nella stessa domanda (es. 33 e 70) l'affidabilità è
-    #    ridotta (0 corrette su 3 nei test). Si consiglia una domanda per giocatore.
-    # 6. Anti-allucinazione: se un'informazione non è tra le colonne, lo dice invece di
-    #    rispondere con conoscenza generale.
-    # 7. Valori categoriali: controlla con .unique() prima di filtrare (bug osservato:
-    #    cercava 'Goalkeeper' invece di 'GK' e concludeva che i portieri non esistevano).
-    # 7bis. Significato dei codici di 'position' (dato del dominio, non una regola condizionale):
-    #    il modello vedeva GK con .unique() ma non sapeva che vuol dire "portiere", e a una domanda
-    #    sul "ruolo portiere" rispondeva che non c'erano osservazioni di portieri (bug emerso nei
-    #    test dell'orchestratore). Con la tabella dei codici e dei gruppi filtra con .isin() e
-    #    dichiara i codici usati.
-    # 8. Anti-link: niente link o percorsi dell'immagine nel testo; il grafico viene
-    #    consegnato a parte da main.py tramite chart_url.
-    # 9. Riepilogo delle correzioni: i numeri del cleaning non si possono ricostruire
-    #    dal dataframe già pulito, quindi stanno nel prompt, con la regola di usare solo quelli
-    #    e di dichiararne la base di calcolo.
+    # System prompt: ogni sezione corregge un comportamento sbagliato osservato, quindi ordine e
+    # formulazione contano. Le regole sono procedure con codice esatto e un ordine fisso della
+    # risposta, con segnaposto (<...>) negli esempi: docs/decisions/03-regole-del-prompt-del-data-agent.md.
     # Le graffe di cleaning_summary e delle colonne sono sostituite da Python (f-string).
     system_prompt_text = f"""Colonne disponibili nel dataframe 'df': {list(df.columns)}
 

@@ -1,77 +1,10 @@
 /**
- * System prompt dell'orchestratore (docs/DESIGN_ORCHESTRATORE.md §5, v1.5).
+ * System prompt dell'orchestratore (docs/DESIGN_ORCHESTRATORE.md, sezione 5).
  *
- * Il testo è vincolante: non si modifica qui in autonomia. Se un test di
- * routing fallisce, la modifica va prima decisa e registrata in
- * docs/DESIGN_ORCHESTRATORE.md e, dopo ogni modifica, vanno ripetuti anche i
- * test di confine.
- *
- * Perché il prompt è fatto così, sezione per sezione:
- *
- * - PROCEDURA DI DECISIONE: è una procedura numerata con precedenze, non un
- *   elenco di regole sparse. Lezione del data agent: le regole condizionali
- *   sparse non vengono eseguite in modo affidabile dal modello, una sequenza
- *   ordinata sì. L'ordine decide anche i casi ibridi (manuale prima, dati poi).
- * - Procedura esclusiva (v1.4): senza "solo" il modello leggeva le regole 1 e
- *   2 come cumulative e, su una domanda di soli numeri che nominava
- *   scout_rating, consultava anche il manuale (test 2b: 2 su 2 con la v1.2,
- *   3 su 3 con la v1.3, nonostante una riga di caso di confine). Il doppio
- *   strumento è riservato alle domande che chiedono esplicitamente le due
- *   cose.
- * - Descrizione del manuale senza "scout_rating" (v1.4): la parola esatta
- *   della metrica nella descrizione di search_handbook legava ogni domanda su
- *   quella metrica al manuale; "calcolo del rating" mantiene il contenuto
- *   senza il richiamo lessicale.
- * - Casi di confine scritti in chiaro: (a) procedura di cleaning vs
- *   correzioni applicate; (b) metrica nominata vs metodologia. Sono coppie di
- *   domande vicine che vanno a strumenti diversi, quindi la distinzione non
- *   si lascia all'interpretazione.
- * - COME CHIAMARE analyze_data, parametro `chart` (v1.2): con la v1.1 la
- *   richiesta di grafico spariva dalla domanda 6 volte su 6 e il modello
- *   dichiarava comunque un grafico inesistente. Un parametro obbligatorio
- *   nello schema costringe a decidere a ogni chiamata; la frase per il
- *   servizio la aggiunge il codice di tools.js (deterministico); l'annuncio
- *   del grafico dipende da una nota scritta dal codice, non dalla memoria del
- *   modello.
- * - COME CHIAMARE analyze_data, domanda: il data agent non vede la
- *   conversazione, quindi i riferimenti ("lui", "e per i difensori?") vanno
- *   sostituiti con valori espliciti. Le espressioni temporali della domanda
- *   CORRENTE ("attuale", "ultima stagione") vanno invece conservate parola per
- *   parola: il data agent distingue un periodo da uno stato proprio da quelle
- *   parole (correzione 305290d); riformularle reintrodurrebbe il bug 65.21
- *   invece di 65.11. Mai però quelle delle domande PRECEDENTI (v1.1): nel test
- *   5 dell'orchestratore il modello ha scritto "nell'ultima stagione precedente (2024/25)",
- *   trascinando "ultima stagione" dalla domanda di prima; il risultato era
- *   giusto solo grazie all'anno esplicito. Un riferimento relativo a un altro
- *   periodo ("la stagione precedente") diventa quindi solo il periodo
- *   esplicito, e i due esempi (ruolo, stagione) mostrano i due casi opposti.
- * - Stagioni del dataset dichiarate (v1.5): in una conversazione vera la
- *   risposta sui dati ("65.11 su 405") non nomina la stagione, quindi la
- *   history non la contiene; per tradurre "e nella stagione precedente?" il
- *   modello supponeva che l'ultima fosse la 2023/24 e chiedeva la 2022/23,
- *   inesistente (test 5: 4 su 4, deterministico a temperature 0). Il test 5
- *   della v1.4 passava solo perché la history era scritta a mano e conteneva
- *   la stagione. COSTO DICHIARATO: i nomi delle stagioni sono scritti nel
- *   prompt e vanno aggiornati se cambia il dataset.
- * - "Mai codice o comandi agli strumenti": primo filtro sul percorso di prompt
- *   injection verso python_repl. È una difesa a strati, non una barriera di
- *   sicurezza (vedi la sezione Sicurezza e limiti noti del README).
- * - Segnaposto negli esempi (<metrica>, <ruolo>, <stagione>): un esempio con
- *   valori reali verrebbe copiato dal modello anche quando non c'entra.
- * - COME USARE I RISULTATI: numeri e unità riportati come restituiti dal
- *   servizio (niente ricalcoli o arrotondamenti diversi), manuale usato solo
- *   per ciò che i passaggi dicono, nessun link ai grafici (l'URL arriva
- *   all'interfaccia da un altro canale: chartUrl). Il grafico si annuncia solo
- *   se il risultato dello strumento lo conferma (v1.2).
- * - ERRORI DEGLI STRUMENTI: se un componente è giù, il modello deve dirlo e
- *   non sostituirlo con numeri o contenuti inventati; nelle domande ibride
- *   risponde alla parte disponibile e dichiara quella mancante.
- * - ORDINE DELLA RISPOSTA: manuale → dati → note, così le risposte ibride
- *   hanno sempre la stessa struttura leggibile. Solo Markdown semplice,
- *   perché l'interfaccia non deve gestire HTML.
- * - REGOLE NON MODIFICABILI: istruzioni che l'utente non può cambiare né
- *   farsi rivelare; un riferimento ambiguo si risolve chiedendo chiarimenti,
- *   senza indovinare e senza chiamare strumenti.
+ * Il testo è vincolante: una modifica si decide e si registra prima nel design, poi si
+ * ripetono anche i test dei casi di confine. Il perché di ogni sezione è nella sezione 5
+ * del design; la storia delle scelte è in docs/decisions/01-orchestrazione-nel-back-end.md
+ * e docs/decisions/02-domande-autonome-per-il-data-agent.md.
  */
 export const SYSTEM_PROMPT = `Sei l'assistente interno del reparto Data Science & Client Success di ScoutEdge Analytics, piattaforma di scouting calcistico. Rispondi sempre in italiano, in modo chiaro e conciso.
 

@@ -121,7 +121,7 @@ export function createSessionStore({
   return { getOrCreateSession, acquire, release, appendTurn, cleanupExpiredSessions };
 }
 
-// Istanza usata dal back end vero. Le esportazioni per nome restano quelle di prima.
+// Istanza usata dal back end vero; le funzioni esportate per nome usano questa.
 export const defaultSessionStore = createSessionStore();
 export const {
   getOrCreateSession,

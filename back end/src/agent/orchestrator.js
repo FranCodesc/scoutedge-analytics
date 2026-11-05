@@ -99,8 +99,8 @@ export async function runOrchestrator({ message, history = [], signal }) {
       break;
     }
 
-    // Tool IN SEQUENZA, mai in parallelo: lo stato globale di matplotlib nel
-    // data agent non regge chiamate concorrenti. runToolCall non lancia mai.
+    // Tool IN SEQUENZA: l'ordine dei risultati e di toolsUsed resta quello
+    // deciso dal modello. runToolCall non lancia mai.
     for (const toolCall of toolCalls) {
       const result = await runToolCall(toolCall);
       messages.push(new ToolMessage({ tool_call_id: toolCall.id, content: result }));

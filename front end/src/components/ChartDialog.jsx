@@ -18,8 +18,7 @@ import { useEffect, useRef, useState } from "react";
 export default function ChartDialog({ src, onClose }) {
   const dialogRef = useRef(null);
 
-  // Se l'immagine non si carica (file cancellato dalla pulizia dei grafici, servizio
-  // riavviato) si mostra un testo al posto dell'icona rotta; la finestra resta aperta.
+  // true se l'immagine non si è caricata: al suo posto compare il testo di riserva.
   const [failed, setFailed] = useState(false);
 
   // Apertura al montaggio. Il controllo `open` evita un errore se l'effetto
