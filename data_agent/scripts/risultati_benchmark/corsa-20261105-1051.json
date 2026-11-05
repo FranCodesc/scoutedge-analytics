@@ -1,0 +1,1349 @@
+{
+  "data": "2026-11-05 10:51",
+  "ripetizioni": 5,
+  "thread_duckdb": 2,
+  "macchina": {
+    "sistema": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "processore": "Apple M1",
+    "core": 8,
+    "memoria_totale_gb": 8.6,
+    "python": "3.13.9",
+    "pandas": "3.0.6",
+    "numpy": "2.5.3",
+    "duckdb": "2.0.0"
+  },
+  "dimensioni": {
+    "1": {
+      "righe_grezze": 1208,
+      "righe_pulite": 1185,
+      "fedelta_pulizia": {
+        "ok": true,
+        "differenze": []
+      },
+      "memoria": {
+        "dataframe_pulito_mb": 0.832561,
+        "dataframe_grezzo_mb": 1.024447,
+        "rss_iniziale_mb": 86.58944,
+        "picco_rss_mb": 94.060544,
+        "incremento_picco_mb": 7.471104,
+        "rss_a_regime_con_grezzo_mb": 94.060544,
+        "rss_senza_grezzo_mb": 96.632832
+      },
+      "avvio": {
+        "lettura": {
+          "mediana_s": 0.0030791249992034864,
+          "minimo_s": 0.0029931250001027365,
+          "massimo_s": 0.0031748330002301373,
+          "ripetizioni": 5
+        },
+        "pulizia": {
+          "mediana_s": 0.11151358300048742,
+          "minimo_s": 0.11070483299954503,
+          "massimo_s": 0.11431595800058858,
+          "ripetizioni": 5
+        },
+        "verifica": {
+          "mediana_s": 0.011316875000375148,
+          "minimo_s": 0.011177000000316184,
+          "massimo_s": 0.011963083999944502,
+          "ripetizioni": 5
+        },
+        "totale": {
+          "mediana_s": 0.12590958300006605,
+          "minimo_s": 0.12520054200012964,
+          "massimo_s": 0.12927216700063582,
+          "ripetizioni": 5
+        },
+        "copia_per_richiesta": {
+          "mediana_s": 0.00015133299984881887,
+          "minimo_s": 0.0001376249992972589,
+          "massimo_s": 0.00016649999997753184,
+          "ripetizioni": 5
+        }
+      },
+      "avvio_alternativo": {
+        "parquet_a_dataframe": {
+          "mediana_s": 0.015324166000027617,
+          "minimo_s": 0.015244624999468215,
+          "massimo_s": 0.016033208000408194,
+          "ripetizioni": 5
+        },
+        "parquet_a_vista_duckdb": {
+          "mediana_s": 0.013327250000656932,
+          "minimo_s": 0.013129583000591083,
+          "massimo_s": 0.013529541999560024,
+          "ripetizioni": 5
+        }
+      },
+      "caricamento_duckdb": {
+        "registrazione_dataframe_s": 0.009188875000290864,
+        "creazione_tabella_s": 0.009531290999802877,
+        "scrittura_parquet_s": 0.0068540000002030865,
+        "dimensione_parquet_mb": 0.075972
+      },
+      "domande": {
+        "top10_valore_attuale": {
+          "pandas": {
+            "mediana_s": 0.0011143339997943258,
+            "minimo_s": 0.0011069160000261036,
+            "massimo_s": 0.0011779579999711132,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.0028786660004698206,
+            "minimo_s": 0.0027830409999296535,
+            "massimo_s": 0.0036895420007567736,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.0021237079999991693,
+            "minimo_s": 0.001970249999430962,
+            "massimo_s": 0.0026534580001680297,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.0026258749994667596,
+            "minimo_s": 0.002508917000341171,
+            "massimo_s": 0.0027443750004749745,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "rating_medio_per_stagione": {
+          "pandas": {
+            "mediana_s": 0.0011157499993714737,
+            "minimo_s": 0.0010794580002766452,
+            "massimo_s": 0.0011559580007087789,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.001510457999756909,
+            "minimo_s": 0.0014078329995754757,
+            "massimo_s": 0.001577041000018653,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.0007513749997087871,
+            "minimo_s": 0.0007304159998966497,
+            "massimo_s": 0.0008179999995263643,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.0011743750001187436,
+            "minimo_s": 0.0011673750004774774,
+            "massimo_s": 0.001367957999718783,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "top3_cb_duelli_attuali": {
+          "pandas": {
+            "mediana_s": 0.0012896669995825505,
+            "minimo_s": 0.0012751249996654224,
+            "massimo_s": 0.0013562499998442945,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.002727291999690351,
+            "minimo_s": 0.002667750000000524,
+            "massimo_s": 0.00294495799971628,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.0019337919993631658,
+            "minimo_s": 0.0018722089998846059,
+            "massimo_s": 0.002004500000111875,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.002546583999901486,
+            "minimo_s": 0.002470458000061626,
+            "massimo_s": 0.0026344580001023132,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "giocatori_per_club": {
+          "pandas": {
+            "mediana_s": 0.000510625000060827,
+            "minimo_s": 0.0005041670001446619,
+            "massimo_s": 0.0005265419995339471,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.0015644159993826179,
+            "minimo_s": 0.0015389169993795804,
+            "massimo_s": 0.0016222919994106633,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.0009079999999812571,
+            "minimo_s": 0.0009037079998961417,
+            "massimo_s": 0.001143040999522782,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.0014890410002408316,
+            "minimo_s": 0.0014401250000446453,
+            "massimo_s": 0.0015566669999316218,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "giocatore_70_per_stagione": {
+          "pandas": {
+            "mediana_s": 0.0014838329998383415,
+            "minimo_s": 0.0014081250001254375,
+            "massimo_s": 0.0015499169994654949,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.0015545000005658949,
+            "minimo_s": 0.001524125000287313,
+            "massimo_s": 0.0015958339999997406,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.0008921250000639702,
+            "minimo_s": 0.0008585830000811256,
+            "massimo_s": 0.0009418340005140635,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.001443749999452848,
+            "minimo_s": 0.0013867920006305212,
+            "massimo_s": 0.0014914170005795313,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        }
+      },
+      "duckdb_da_solo": {
+        "rss_iniziale_mb": 86.392832,
+        "picco_rss_mb": 121.143296,
+        "incremento_picco_mb": 34.750464,
+        "incremento_finale_mb": 34.750464
+      }
+    },
+    "10": {
+      "righe_grezze": 12080,
+      "righe_pulite": 11850,
+      "fedelta_pulizia": {
+        "ok": true,
+        "differenze": []
+      },
+      "memoria": {
+        "dataframe_pulito_mb": 8.32561,
+        "dataframe_grezzo_mb": 10.24325,
+        "rss_iniziale_mb": 86.163456,
+        "picco_rss_mb": 120.356864,
+        "incremento_picco_mb": 34.193408,
+        "rss_a_regime_con_grezzo_mb": 120.356864,
+        "rss_senza_grezzo_mb": 123.650048
+      },
+      "avvio": {
+        "lettura": {
+          "mediana_s": 0.02470454200010863,
+          "minimo_s": 0.023856165999859513,
+          "massimo_s": 0.02515674999995099,
+          "ripetizioni": 5
+        },
+        "pulizia": {
+          "mediana_s": 0.6933377920004204,
+          "minimo_s": 0.6876804579997042,
+          "massimo_s": 0.7478350829996998,
+          "ripetizioni": 5
+        },
+        "verifica": {
+          "mediana_s": 0.05414158399980806,
+          "minimo_s": 0.053480499999750464,
+          "massimo_s": 0.05685658299989882,
+          "ripetizioni": 5
+        },
+        "totale": {
+          "mediana_s": 0.7706744580000304,
+          "minimo_s": 0.7692415829997117,
+          "massimo_s": 0.8262823340000978,
+          "ripetizioni": 5
+        },
+        "copia_per_richiesta": {
+          "mediana_s": 0.0008195000000341679,
+          "minimo_s": 0.0007788329994582455,
+          "massimo_s": 0.000856499999827065,
+          "ripetizioni": 5
+        }
+      },
+      "avvio_alternativo": {
+        "parquet_a_dataframe": {
+          "mediana_s": 0.022788333999415045,
+          "minimo_s": 0.022095500000432367,
+          "massimo_s": 0.02306825000050594,
+          "ripetizioni": 5
+        },
+        "parquet_a_vista_duckdb": {
+          "mediana_s": 0.012800374999642372,
+          "minimo_s": 0.012744374999783759,
+          "massimo_s": 0.013196542000514455,
+          "ripetizioni": 5
+        }
+      },
+      "caricamento_duckdb": {
+        "registrazione_dataframe_s": 0.0012893339999209275,
+        "creazione_tabella_s": 0.011513749999721767,
+        "scrittura_parquet_s": 0.011372458000550978,
+        "dimensione_parquet_mb": 0.433775
+      },
+      "domande": {
+        "top10_valore_attuale": {
+          "pandas": {
+            "mediana_s": 0.003839834000245901,
+            "minimo_s": 0.0035025830002268776,
+            "massimo_s": 0.0045268339999893215,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.004735958999845025,
+            "minimo_s": 0.004591416000039317,
+            "massimo_s": 0.0049474999996164115,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.003762041000300087,
+            "minimo_s": 0.0035217499998907442,
+            "massimo_s": 0.0041382089993931,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.004378417000225454,
+            "minimo_s": 0.004223332999572449,
+            "massimo_s": 0.004668208999646595,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "rating_medio_per_stagione": {
+          "pandas": {
+            "mediana_s": 0.0017529579999973066,
+            "minimo_s": 0.0017324999998891144,
+            "massimo_s": 0.0019507500001054723,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.001749832999848877,
+            "minimo_s": 0.0015663750000385335,
+            "massimo_s": 0.0018236659998365212,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.001021375000163971,
+            "minimo_s": 0.0008978340001704055,
+            "massimo_s": 0.0010615410001264536,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.0014022920004208572,
+            "minimo_s": 0.0012544580004032468,
+            "massimo_s": 0.0014978750004956964,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "top3_cb_duelli_attuali": {
+          "pandas": {
+            "mediana_s": 0.003937208999559516,
+            "minimo_s": 0.00378604199977417,
+            "massimo_s": 0.004197958999611728,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.004550333999759459,
+            "minimo_s": 0.004427416999533307,
+            "massimo_s": 0.0048183330000028946,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.003575834000002942,
+            "minimo_s": 0.0034452500003681052,
+            "massimo_s": 0.003874625000207743,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.004641165999601071,
+            "minimo_s": 0.004249208000146609,
+            "massimo_s": 0.005448500000056811,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "giocatori_per_club": {
+          "pandas": {
+            "mediana_s": 0.0014650000002802699,
+            "minimo_s": 0.0013021249997109408,
+            "massimo_s": 0.0017174579998027184,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.00229600000056962,
+            "minimo_s": 0.0019219579999116831,
+            "massimo_s": 0.0024775829997452092,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.001261250000425207,
+            "minimo_s": 0.001133791000029305,
+            "massimo_s": 0.0013039169998592115,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.0019841250004901667,
+            "minimo_s": 0.0017697080002108123,
+            "massimo_s": 0.0021069579997856636,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "giocatore_70_per_stagione": {
+          "pandas": {
+            "mediana_s": 0.0014231250006560003,
+            "minimo_s": 0.0013941249999334104,
+            "massimo_s": 0.0016251669994744589,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.001961166000000958,
+            "minimo_s": 0.0017364590003126068,
+            "massimo_s": 0.002357500000471191,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.0010246659994663787,
+            "minimo_s": 0.0008770419999564183,
+            "massimo_s": 0.001049834000696137,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.0015853330005484167,
+            "minimo_s": 0.0014960409998820978,
+            "massimo_s": 0.001862957999946957,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        }
+      },
+      "duckdb_da_solo": {
+        "rss_iniziale_mb": 85.884928,
+        "picco_rss_mb": 123.191296,
+        "incremento_picco_mb": 37.306368,
+        "incremento_finale_mb": 37.306368
+      }
+    },
+    "30": {
+      "righe_grezze": 36240,
+      "righe_pulite": 35550,
+      "fedelta_pulizia": {
+        "ok": true,
+        "differenze": []
+      },
+      "memoria": {
+        "dataframe_pulito_mb": 24.97683,
+        "dataframe_grezzo_mb": 30.72956,
+        "rss_iniziale_mb": 85.721088,
+        "picco_rss_mb": 165.80608,
+        "incremento_picco_mb": 80.084992,
+        "rss_a_regime_con_grezzo_mb": 165.183488,
+        "rss_senza_grezzo_mb": 166.002688
+      },
+      "avvio": {
+        "lettura": {
+          "mediana_s": 0.07259608300046239,
+          "minimo_s": 0.06663924999975279,
+          "massimo_s": 0.08179079100045783,
+          "ripetizioni": 5
+        },
+        "pulizia": {
+          "mediana_s": 1.9905043329999899,
+          "minimo_s": 1.967060042000412,
+          "massimo_s": 1.9959630419998575,
+          "ripetizioni": 5
+        },
+        "verifica": {
+          "mediana_s": 0.14929750000010245,
+          "minimo_s": 0.14670925000064017,
+          "massimo_s": 0.15460012499988807,
+          "ripetizioni": 5
+        },
+        "totale": {
+          "mediana_s": 2.208626208000169,
+          "minimo_s": 2.188299417000053,
+          "massimo_s": 2.2285528330003217,
+          "ripetizioni": 5
+        },
+        "copia_per_richiesta": {
+          "mediana_s": 0.003086499999881198,
+          "minimo_s": 0.00247041700004047,
+          "massimo_s": 0.0031118750002860907,
+          "ripetizioni": 5
+        }
+      },
+      "avvio_alternativo": {
+        "parquet_a_dataframe": {
+          "mediana_s": 0.03740533300060633,
+          "minimo_s": 0.03665495799941709,
+          "massimo_s": 0.0376403330001267,
+          "ripetizioni": 5
+        },
+        "parquet_a_vista_duckdb": {
+          "mediana_s": 0.012811417000193615,
+          "minimo_s": 0.012575124999784748,
+          "massimo_s": 0.013204625000071246,
+          "ripetizioni": 5
+        }
+      },
+      "caricamento_duckdb": {
+        "registrazione_dataframe_s": 0.0011809170000560698,
+        "creazione_tabella_s": 0.029331333999834897,
+        "scrittura_parquet_s": 0.024003417000130867,
+        "dimensione_parquet_mb": 1.080228
+      },
+      "domande": {
+        "top10_valore_attuale": {
+          "pandas": {
+            "mediana_s": 0.010150791000341997,
+            "minimo_s": 0.010099957999955222,
+            "massimo_s": 0.010722542000621615,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.0078794579994792,
+            "minimo_s": 0.007837041999664507,
+            "massimo_s": 0.008075916999587207,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.006997624999712571,
+            "minimo_s": 0.006526999999550753,
+            "massimo_s": 0.007225457999993523,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.008286165999379591,
+            "minimo_s": 0.008002958999895782,
+            "massimo_s": 0.00877254199986055,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "rating_medio_per_stagione": {
+          "pandas": {
+            "mediana_s": 0.0029989590002514888,
+            "minimo_s": 0.002807542000482499,
+            "massimo_s": 0.0030735420004930347,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.0021872080005778116,
+            "minimo_s": 0.0020494169993980904,
+            "massimo_s": 0.00231595799959905,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.0012572080004247255,
+            "minimo_s": 0.0011836250005217153,
+            "massimo_s": 0.0014287920002971077,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.0014607920002163155,
+            "minimo_s": 0.0013479580002240255,
+            "massimo_s": 0.0015280000006896444,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "top3_cb_duelli_attuali": {
+          "pandas": {
+            "mediana_s": 0.009669416000178899,
+            "minimo_s": 0.00930070800040994,
+            "massimo_s": 0.009746707999511273,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.008637749999252264,
+            "minimo_s": 0.008434792000116431,
+            "massimo_s": 0.008788041999650886,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.0075616660005835,
+            "minimo_s": 0.007408583000142244,
+            "massimo_s": 0.008053208000092127,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.008539875000678876,
+            "minimo_s": 0.008004624999557564,
+            "massimo_s": 0.00877658299941686,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "giocatori_per_club": {
+          "pandas": {
+            "mediana_s": 0.0029471660000126576,
+            "minimo_s": 0.0028142920000391314,
+            "massimo_s": 0.002989916999467823,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.0024602909998066025,
+            "minimo_s": 0.0023337499997069244,
+            "massimo_s": 0.002486499999577063,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.001652916999773879,
+            "minimo_s": 0.0015574580002066796,
+            "massimo_s": 0.001841665999563702,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.0021442500001285225,
+            "minimo_s": 0.0020481659994402435,
+            "massimo_s": 0.0022497500003737514,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "giocatore_70_per_stagione": {
+          "pandas": {
+            "mediana_s": 0.0013375830003496958,
+            "minimo_s": 0.0013290839997353032,
+            "massimo_s": 0.001353249999738182,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.0019286669994471595,
+            "minimo_s": 0.0019186669996997807,
+            "massimo_s": 0.0020910840003125486,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.0009415000004082685,
+            "minimo_s": 0.0009011669999381411,
+            "massimo_s": 0.0009567919996698038,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.0018639580002854927,
+            "minimo_s": 0.0016220839997913572,
+            "massimo_s": 0.002030124999691907,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        }
+      },
+      "duckdb_da_solo": {
+        "rss_iniziale_mb": 85.082112,
+        "picco_rss_mb": 127.30368,
+        "incremento_picco_mb": 42.221568,
+        "incremento_finale_mb": 42.221568
+      }
+    },
+    "60": {
+      "righe_grezze": 72480,
+      "righe_pulite": 71100,
+      "fedelta_pulizia": {
+        "ok": true,
+        "differenze": []
+      },
+      "memoria": {
+        "dataframe_pulito_mb": 49.95366,
+        "dataframe_grezzo_mb": 61.459059,
+        "rss_iniziale_mb": 86.09792,
+        "picco_rss_mb": 228.06528,
+        "incremento_picco_mb": 141.96736,
+        "rss_a_regime_con_grezzo_mb": 224.575488,
+        "rss_senza_grezzo_mb": 225.312768
+      },
+      "avvio": {
+        "lettura": {
+          "mediana_s": 0.1298288340003637,
+          "minimo_s": 0.1280430000006163,
+          "massimo_s": 0.1346743330004756,
+          "ripetizioni": 5
+        },
+        "pulizia": {
+          "mediana_s": 3.9721785839992663,
+          "minimo_s": 3.92955341600009,
+          "massimo_s": 3.9888054579996606,
+          "ripetizioni": 5
+        },
+        "verifica": {
+          "mediana_s": 0.2889827499993771,
+          "minimo_s": 0.28738304099988454,
+          "massimo_s": 0.29361258300014015,
+          "ripetizioni": 5
+        },
+        "totale": {
+          "mediana_s": 4.39252466599919,
+          "minimo_s": 4.348364999999831,
+          "massimo_s": 4.416151625000566,
+          "ripetizioni": 5
+        },
+        "copia_per_richiesta": {
+          "mediana_s": 0.004992583999410272,
+          "minimo_s": 0.004867958999966504,
+          "massimo_s": 0.005164709000382572,
+          "ripetizioni": 5
+        }
+      },
+      "avvio_alternativo": {
+        "parquet_a_dataframe": {
+          "mediana_s": 0.056454915999893274,
+          "minimo_s": 0.05479920800007676,
+          "massimo_s": 0.06343220800044946,
+          "ripetizioni": 5
+        },
+        "parquet_a_vista_duckdb": {
+          "mediana_s": 0.012811749999855238,
+          "minimo_s": 0.012421708000147191,
+          "massimo_s": 0.013155374999769265,
+          "ripetizioni": 5
+        }
+      },
+      "caricamento_duckdb": {
+        "registrazione_dataframe_s": 0.001201041000058467,
+        "creazione_tabella_s": 0.05652145799922437,
+        "scrittura_parquet_s": 0.04205687499961641,
+        "dimensione_parquet_mb": 1.977321
+      },
+      "domande": {
+        "top10_valore_attuale": {
+          "pandas": {
+            "mediana_s": 0.018738875000053667,
+            "minimo_s": 0.018456709000020055,
+            "massimo_s": 0.019093375000011292,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.012136000000282365,
+            "minimo_s": 0.011936082999454811,
+            "massimo_s": 0.012210750000122061,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.010883541999646695,
+            "minimo_s": 0.01068387499981327,
+            "massimo_s": 0.010986208999383962,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.012240709000252536,
+            "minimo_s": 0.011864333999255905,
+            "massimo_s": 0.012734416999592213,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "rating_medio_per_stagione": {
+          "pandas": {
+            "mediana_s": 0.004686917000071844,
+            "minimo_s": 0.004657208000026003,
+            "massimo_s": 0.004737790999570279,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.002750208000179555,
+            "minimo_s": 0.0025677079993329244,
+            "massimo_s": 0.0028633330002776347,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.0018111250001311419,
+            "minimo_s": 0.001728999999613734,
+            "massimo_s": 0.0019434169998930884,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.0015677500005040201,
+            "minimo_s": 0.0015430000003107125,
+            "massimo_s": 0.0016113330002553994,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "top3_cb_duelli_attuali": {
+          "pandas": {
+            "mediana_s": 0.01711341700047342,
+            "minimo_s": 0.016939500000262342,
+            "massimo_s": 0.017602124999939406,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.012834084000132862,
+            "minimo_s": 0.012707249999948544,
+            "massimo_s": 0.013342459000341478,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.012101999999686086,
+            "minimo_s": 0.011543167000127141,
+            "massimo_s": 0.012174249999588937,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.013188375000027008,
+            "minimo_s": 0.012365000000500004,
+            "massimo_s": 0.013416249999863794,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "giocatori_per_club": {
+          "pandas": {
+            "mediana_s": 0.0050065420000464655,
+            "minimo_s": 0.004973416999746405,
+            "massimo_s": 0.0050157079995187814,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.0032427090000055614,
+            "minimo_s": 0.0030612919999839505,
+            "massimo_s": 0.003403624999918975,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.0022494580007332843,
+            "minimo_s": 0.002141291000043566,
+            "massimo_s": 0.0025588750004317262,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.002815875000123924,
+            "minimo_s": 0.002612000000226544,
+            "massimo_s": 0.002983499999572814,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "giocatore_70_per_stagione": {
+          "pandas": {
+            "mediana_s": 0.0013686660004168516,
+            "minimo_s": 0.0013538749999497668,
+            "massimo_s": 0.001373750000311702,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.0022491250001621665,
+            "minimo_s": 0.002202916999522131,
+            "massimo_s": 0.0023842500004320755,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.0009085409992621862,
+            "minimo_s": 0.0008548750001864391,
+            "massimo_s": 0.0011328330001560971,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.0017340829999739071,
+            "minimo_s": 0.0016827500003273599,
+            "massimo_s": 0.0020450420006454806,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        }
+      },
+      "duckdb_da_solo": {
+        "rss_iniziale_mb": 84.525056,
+        "picco_rss_mb": 137.314304,
+        "incremento_picco_mb": 52.789248,
+        "incremento_finale_mb": 52.789248
+      }
+    },
+    "100": {
+      "righe_grezze": 120800,
+      "righe_pulite": 118500,
+      "fedelta_pulizia": {
+        "ok": true,
+        "differenze": []
+      },
+      "memoria": {
+        "dataframe_pulito_mb": 83.2561,
+        "dataframe_grezzo_mb": 102.43168,
+        "rss_iniziale_mb": 85.131264,
+        "picco_rss_mb": 303.169536,
+        "incremento_picco_mb": 218.038272,
+        "rss_a_regime_con_grezzo_mb": 296.206336,
+        "rss_senza_grezzo_mb": 296.861696
+      },
+      "avvio": {
+        "lettura": {
+          "mediana_s": 0.22470275000068796,
+          "minimo_s": 0.21108462499978486,
+          "massimo_s": 0.2296749170000112,
+          "ripetizioni": 5
+        },
+        "pulizia": {
+          "mediana_s": 6.558944499999598,
+          "minimo_s": 6.526922499999273,
+          "massimo_s": 6.5752318750000995,
+          "ripetizioni": 5
+        },
+        "verifica": {
+          "mediana_s": 0.4870908330003658,
+          "minimo_s": 0.4805013750001308,
+          "massimo_s": 0.49635099999977683,
+          "ripetizioni": 5
+        },
+        "totale": {
+          "mediana_s": 7.251732000000629,
+          "minimo_s": 7.2339473330002875,
+          "massimo_s": 7.30048883299969,
+          "ripetizioni": 5
+        },
+        "copia_per_richiesta": {
+          "mediana_s": 0.009905625000101281,
+          "minimo_s": 0.009486666000157129,
+          "massimo_s": 0.010315457999240607,
+          "ripetizioni": 5
+        }
+      },
+      "avvio_alternativo": {
+        "parquet_a_dataframe": {
+          "mediana_s": 0.07643108299998858,
+          "minimo_s": 0.07400341699940327,
+          "massimo_s": 0.07759675000033894,
+          "ripetizioni": 5
+        },
+        "parquet_a_vista_duckdb": {
+          "mediana_s": 0.013500291999662295,
+          "minimo_s": 0.012757167000017944,
+          "massimo_s": 0.013849957999809703,
+          "ripetizioni": 5
+        }
+      },
+      "caricamento_duckdb": {
+        "registrazione_dataframe_s": 0.0011954999999943539,
+        "creazione_tabella_s": 0.08816070800003217,
+        "scrittura_parquet_s": 0.0720968340001491,
+        "dimensione_parquet_mb": 3.213586
+      },
+      "domande": {
+        "top10_valore_attuale": {
+          "pandas": {
+            "mediana_s": 0.035268083999653754,
+            "minimo_s": 0.03516066700012743,
+            "massimo_s": 0.03558558399981848,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.01889604200005124,
+            "minimo_s": 0.017734666999785986,
+            "massimo_s": 0.02000166700054251,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.017110624999986612,
+            "minimo_s": 0.01664212499963469,
+            "massimo_s": 0.01743679199989856,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.018575457999759237,
+            "minimo_s": 0.018219874999886088,
+            "massimo_s": 0.01946879200022522,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "rating_medio_per_stagione": {
+          "pandas": {
+            "mediana_s": 0.007971292000547692,
+            "minimo_s": 0.00792833299965423,
+            "massimo_s": 0.008053290999669116,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.0038082089995441493,
+            "minimo_s": 0.0037449999999807915,
+            "massimo_s": 0.004153957999733393,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.002426624999316118,
+            "minimo_s": 0.0023460830007024924,
+            "massimo_s": 0.0031669589998273295,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.0017236670000784216,
+            "minimo_s": 0.0016980420004983898,
+            "massimo_s": 0.001758749999680731,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "top3_cb_duelli_attuali": {
+          "pandas": {
+            "mediana_s": 0.032634082999720704,
+            "minimo_s": 0.03122849999999744,
+            "massimo_s": 0.032885917000385234,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.02036166600009892,
+            "minimo_s": 0.019428542000241578,
+            "massimo_s": 0.020969875000446336,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.019180916000550496,
+            "minimo_s": 0.01830379199964227,
+            "massimo_s": 0.019370208000509592,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.019689791999553563,
+            "minimo_s": 0.019520249999914085,
+            "massimo_s": 0.020987957999750506,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "giocatori_per_club": {
+          "pandas": {
+            "mediana_s": 0.009177790999274293,
+            "minimo_s": 0.009014790999572142,
+            "massimo_s": 0.00945004200002586,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.004972124999767402,
+            "minimo_s": 0.004207375000078173,
+            "massimo_s": 0.005202499999541033,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.0038556660001631826,
+            "minimo_s": 0.003320083000289742,
+            "massimo_s": 0.004079250000359025,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.004091916000106721,
+            "minimo_s": 0.0040450409996992676,
+            "massimo_s": 0.0042244160003974685,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "giocatore_70_per_stagione": {
+          "pandas": {
+            "mediana_s": 0.0013989590006531216,
+            "minimo_s": 0.001380583000354818,
+            "massimo_s": 0.0014152909998301766,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.0026727499998742132,
+            "minimo_s": 0.002560375000030035,
+            "massimo_s": 0.0032555420002609026,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.0007838749997972627,
+            "minimo_s": 0.0007631250000486034,
+            "massimo_s": 0.0009180839997497969,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.0023399170004267944,
+            "minimo_s": 0.002029916999163106,
+            "massimo_s": 0.0031637500005672337,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        }
+      },
+      "duckdb_da_solo": {
+        "rss_iniziale_mb": 85.377024,
+        "picco_rss_mb": 135.774208,
+        "incremento_picco_mb": 50.397184,
+        "incremento_finale_mb": 50.397184
+      }
+    },
+    "1000": {
+      "righe_grezze": 1208000,
+      "righe_pulite": 1185000,
+      "fedelta_pulizia": {
+        "ok": true,
+        "differenze": []
+      },
+      "memoria": {
+        "dataframe_pulito_mb": 832.561,
+        "dataframe_grezzo_mb": 1024.316003,
+        "rss_iniziale_mb": 85.999616,
+        "picco_rss_mb": 1732.132864,
+        "incremento_picco_mb": 1646.133248,
+        "rss_a_regime_con_grezzo_mb": 1235.075072,
+        "rss_senza_grezzo_mb": 893.41952
+      },
+      "avvio": {
+        "lettura": {
+          "mediana_s": 2.1188414159996682,
+          "minimo_s": 2.1013584170004833,
+          "massimo_s": 2.1859395000001314,
+          "ripetizioni": 5
+        },
+        "pulizia": {
+          "mediana_s": 66.41886937500021,
+          "minimo_s": 65.98596358400027,
+          "massimo_s": 66.89125383299961,
+          "ripetizioni": 5
+        },
+        "verifica": {
+          "mediana_s": 5.011684750000313,
+          "minimo_s": 4.947922207999909,
+          "massimo_s": 5.022001207999892,
+          "ripetizioni": 5
+        },
+        "totale": {
+          "mediana_s": 73.5135690420002,
+          "minimo_s": 73.05272720799985,
+          "massimo_s": 74.07513270799973,
+          "ripetizioni": 5
+        },
+        "copia_per_richiesta": {
+          "mediana_s": 0.09698333399956027,
+          "minimo_s": 0.09590075000051002,
+          "massimo_s": 0.09730458299964084,
+          "ripetizioni": 5
+        }
+      },
+      "avvio_alternativo": {
+        "parquet_a_dataframe": {
+          "mediana_s": 0.8492416670005696,
+          "minimo_s": 0.785906041999624,
+          "massimo_s": 0.8890285840006982,
+          "ripetizioni": 5
+        },
+        "parquet_a_vista_duckdb": {
+          "mediana_s": 0.013700665999749617,
+          "minimo_s": 0.01332524999997986,
+          "massimo_s": 0.014516291999825626,
+          "ripetizioni": 5
+        }
+      },
+      "caricamento_duckdb": {
+        "registrazione_dataframe_s": 0.005613917000118818,
+        "creazione_tabella_s": 0.554677250000168,
+        "scrittura_parquet_s": 0.4188487499995972,
+        "dimensione_parquet_mb": 32.412075
+      },
+      "domande": {
+        "top10_valore_attuale": {
+          "pandas": {
+            "mediana_s": 0.454604957999436,
+            "minimo_s": 0.4464689999995244,
+            "massimo_s": 0.45923908300028415,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.12659654099934414,
+            "minimo_s": 0.12569558299946948,
+            "massimo_s": 0.1276740420007627,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.12306229099976917,
+            "minimo_s": 0.12155695900037244,
+            "massimo_s": 0.12411341600000014,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.13095249999969383,
+            "minimo_s": 0.12936483300018153,
+            "massimo_s": 0.1345498749997205,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "rating_medio_per_stagione": {
+          "pandas": {
+            "mediana_s": 0.06765970800006471,
+            "minimo_s": 0.06653029099925334,
+            "massimo_s": 0.06777266700009932,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.014732374999766762,
+            "minimo_s": 0.014529750000292552,
+            "massimo_s": 0.015367583000625018,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.010614832999635837,
+            "minimo_s": 0.010591750000457978,
+            "massimo_s": 0.011097125000560482,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.006574458000613959,
+            "minimo_s": 0.006114625000009255,
+            "massimo_s": 0.007069708000017272,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "top3_cb_duelli_attuali": {
+          "pandas": {
+            "mediana_s": 0.42451879199961695,
+            "minimo_s": 0.42230012500021985,
+            "massimo_s": 0.45331625000017084,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.139884291999806,
+            "minimo_s": 0.13892295900041063,
+            "massimo_s": 0.14111633399988932,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.13417549999940093,
+            "minimo_s": 0.13153566700020747,
+            "massimo_s": 0.13446837500032416,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.14236216700010118,
+            "minimo_s": 0.13662262499929057,
+            "massimo_s": 0.1461305419998098,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "giocatori_per_club": {
+          "pandas": {
+            "mediana_s": 0.08252125000035448,
+            "minimo_s": 0.08226441700026044,
+            "massimo_s": 0.08554662499955157,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.0228791249992355,
+            "minimo_s": 0.022503959000459872,
+            "massimo_s": 0.023798250000254484,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.019087166000645084,
+            "minimo_s": 0.019031166999411653,
+            "massimo_s": 0.019373541999812005,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.018702374999520543,
+            "minimo_s": 0.017870165999738674,
+            "massimo_s": 0.02129570800025249,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        },
+        "giocatore_70_per_stagione": {
+          "pandas": {
+            "mediana_s": 0.0017454999997426057,
+            "minimo_s": 0.0017372499996781698,
+            "massimo_s": 0.001794083000277169,
+            "ripetizioni": 5
+          },
+          "duckdb_dataframe": {
+            "mediana_s": 0.014432791000217549,
+            "minimo_s": 0.013565041999754612,
+            "massimo_s": 0.014701082999636128,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_tabella": {
+            "mediana_s": 0.0010690829994928208,
+            "minimo_s": 0.0010435419999339501,
+            "massimo_s": 0.0011799999992945231,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          },
+          "duckdb_parquet": {
+            "mediana_s": 0.003313874999548716,
+            "minimo_s": 0.0029402090003713965,
+            "massimo_s": 0.003540457999406499,
+            "ripetizioni": 5,
+            "uguale_a_pandas": true
+          }
+        }
+      },
+      "duckdb_da_solo": {
+        "rss_iniziale_mb": 84.983808,
+        "picco_rss_mb": 325.14048,
+        "incremento_picco_mb": 240.156672,
+        "incremento_finale_mb": 240.156672
+      }
+    }
+  }
+}

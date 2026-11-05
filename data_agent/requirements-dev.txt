@@ -3,3 +3,5 @@
 pytest==9.2.0
 pluggy==1.7.0
 iniconfig==2.3.1
+# Solo per il benchmark (scripts/benchmark.py): non serve in produzione.
+duckdb==2.0.0
