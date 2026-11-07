@@ -2,14 +2,66 @@
 
 Come verificare che il sistema funzioni e quali risultati aspettarsi. Il contratto delle API è in [CONTRATTO_API.md](CONTRATTO_API.md), le domande di verifica dell'orchestratore in [DESIGN_ORCHESTRATORE.md](DESIGN_ORCHESTRATORE.md) (sezione 6).
 
-I test distinguono due tipi di verifica:
+Le verifiche sono di quattro tipi:
 
-- **Automatica**: forma delle risposte, codici di errore, sessioni, catena dei grafici. L'esito è OK o KO.
-- **A mano**: il contenuto delle risposte dell'LLM. Il modello è probabilistico, quindi i numeri e le scelte degli strumenti si confrontano con la tabella [Valori attesi](#valori-attesi).
+- **Test automatici**: 437 test sul codice deterministico, senza modello, senza servizi accesi e senza chiave OpenAI, eseguiti anche dall'integrazione continua a ogni push. Vedi [Test automatici](#test-automatici).
+- **Valutazione automatica**: le risposte del modello reale su 13 domande, ripetute N volte, con un punteggio deterministico. Vedi [Valutazione automatica](#valutazione-automatica).
+- **Contratto dell'API**: forma delle risposte, codici di errore, sessioni, catena dei grafici, con i servizi accesi. L'esito è OK o KO. Vedi [Test automatici dell'API](#test-automatici-dellapi).
+- **A mano**: il contenuto delle risposte dell'LLM nelle prove dall'interfaccia e nella parte B dello script dell'API. Il modello è probabilistico, quindi i numeri e le scelte degli strumenti si confrontano con la tabella [Valori attesi](#valori-attesi).
+
+## Test automatici
+
+Sono 437 test: 136 del data agent (`pytest`), 225 del back end (`node:test`, incluso in Node) e 76 del front end (Vitest con jsdom e Testing Library). Non chiamano il modello, non richiedono Chroma né gli altri servizi accesi e non usano la chiave OpenAI. Si lanciano dalla radice del repository, dopo l'installazione ([`docs/INSTALLAZIONE.md`](INSTALLAZIONE.md)):
+
+```bash
+(cd data_agent && source venv/bin/activate && pip install -r requirements-dev.txt && python -m pytest)   # 136 test
+(cd "back end" && npm test)                                                                            # 225 test
+(cd "front end" && npm test)                                                                           # 76 test
+```
+
+`requirements-dev.txt` aggiunge a `requirements.txt` gli strumenti di test, che non entrano nell'immagine della demo. I test del front end richiedono Node.js 22.13 o successivo.
+
+- **Data agent** (`data_agent/tests/`): pulizia e schema dei dati, valori del dataset reale (righe, duplicati, club, nazionalità), API con agente e modello simulati (`MagicMock`), esecuzione concorrente del codice generato e pulizia dei grafici. Il test di concorrenza è stato scritto prima della correzione: falliva in 17 giri su 20 sul codice senza lock e passa in 20 su 20 con il lock ([decisions/06](decisions/06-esecuzione-del-codice-generato.md)).
+- **Back end** (`back end/test/`): route `GET /`, `POST /api/chat` e `GET /charts/:filename` con dipendenze simulate, campi del contratto, intestazioni, configurazione del limite di frequenza, sessioni, soglie del RAG, strumenti dell'orchestratore, client del data agent e punteggio della valutazione automatica.
+- **Front end** (`front end/test/`): client API, conversazione, Markdown senza HTML grezzo, etichette, scheda di errore e testo di riserva dei grafici; dettagli nel [README del front end](../front%20end/README.md#test).
+
+### Integrazione continua
+
+A ogni push e pull request su `main`, GitHub Actions esegue le tre suite in tre job paralleli (`.github/workflows/test.yml`, Python 3.13 e Node 24); il job del front end esegue anche lint e build. Il workflow ha solo il permesso di lettura sul repository e non usa secret. La prima corsa ha richiesto circa un minuto. Gli esiti sono nella [scheda Actions](https://github.com/FranCodesc/scoutedge-analytics/actions/workflows/test.yml).
+
+## Valutazione automatica
+
+`npm run eval` misura le risposte del modello reale attraverso `POST /api/chat`: 13 domande (16 turni, perché tre sono conversazioni di due turni), ripetute N volte con una sessione nuova a ogni ripetizione. Domande, risposte attese (prese dalla tabella [Valori attesi](#valori-attesi)) e regola di punteggio sono in `back end/eval/domande.json`, scritte prima di lanciare le corse.
+
+Il punteggio è deterministico. Un turno ha i **valori** corretti se la risposta contiene tutti i numeri e i testi attesi, nessun valore vietato e, quando previsto, un grafico; i numeri si cercano in tutte le grafie dello stesso valore (18.680.000, 18,680,000, 18680000), senza tolleranza. Un turno ha gli **strumenti** corretti se l'insieme di `toolsUsed` coincide con quello atteso. I due esiti si contano a parte.
+
+Servono Chroma, data agent e back end avviati, come per i [test dell'API](#test-automatici-dellapi). Da `back end/`:
+
+```bash
+npm run eval                                                       # piano e costo stimato, nessuna chiamata
+npm run eval -- --conferma                                         # corsa con N = 5
+npm run eval -- --conferma --n=20 --solo=cb_metodologia_e_dati     # una sola domanda, 20 ripetizioni
+```
+
+Lo script salva ogni corsa in `back end/eval/risultati/` (JSON con tutte le risposte e riepilogo in Markdown). La valutazione non gira nell'integrazione continua: chiama il modello e costa token.
+
+| Corsa (2026-11-04) | Ripetizioni | Valori corretti | Strumenti corretti |
+|---|---|---|---|
+| Prima corsa completa, non salvata nel repository | 5 | 78 su 80 | — |
+| [Corsa completa](../back%20end/eval/risultati/corsa-20261104-1008.md) | 5 | 80 su 80 | 80 su 80 |
+| [Difensori centrali](../back%20end/eval/risultati/corsa-20261104-1030.md) (`cb_metodologia_e_dati`) | 20 | 20 su 20 | 20 su 20 |
+
+La prima corsa completa è una corsa vera e si conta. Dei due turni sbagliati, uno è una risposta sui tre difensori centrali con il solo Pereira; dell'altro non resta traccia ([decisions/07](decisions/07-test-e-valutazione.md)).
+
+**Limite intermittente sui difensori centrali.** Sulla domanda "Poi mostrami i 3 CB con il duels_won_pct attuale più alto" l'errore è sempre lo stesso: compare solo Pereira. Nella prima corsa completa è comparso almeno una volta; nelle corse salvate le risposte corrette sono 25 su 25 (5 con N=5 e 20 con N=20). 25 ripetizioni senza errori non bastano a dire che non c'è più: resta un limite dichiarato (vedi [Limiti noti del data agent](#limiti-noti-del-data-agent)).
+
+## Benchmark
+
+Il benchmark del data agent misura avvio, memoria e cinque domande rappresentative su dataset sintetici da 1 a 1000 volte il file reale, in pandas e in DuckDB, con una regola di decisione fissata prima di misurare (script in `data_agent/scripts/`: `dataset_sintetico.py`, `benchmark.py`, `benchmark_riepilogo.py`). Esito: pandas basta fino a 60 volte i dati attuali; il primo limite è la memoria, e nessuna domanda supera 1 s (455 ms a 1000×). Soglie, risultati e perché non DuckDB né SQLite: [decisions/09](decisions/09-pandas-e-non-duckdb.md); misure complete nella [corsa completa](../data_agent/scripts/risultati_benchmark/corsa-20261105-1051.md) e nella [corsa preliminare](../data_agent/scripts/risultati_benchmark/corsa-20261105-1042.md).
 
 ## Prerequisiti
 
-Tutti i servizi avviati, nell'ordine indicato nel README: Chroma (con il manuale già indicizzato), data agent (porta 8000) e back end (porta 3001). Le richieste dei test chiamano OpenAI, quindi hanno un costo e richiedono la chiave configurata nei file `.env`.
+Per i test dell'API, la valutazione automatica e le verifiche manuali servono tutti i servizi avviati, nell'ordine indicato in [`docs/INSTALLAZIONE.md`](INSTALLAZIONE.md#avvio): Chroma (con il manuale già indicizzato), data agent (porta 8000) e back end (porta 3001). Le richieste dei test chiamano OpenAI, quindi hanno un costo e richiedono la chiave configurata nei file `.env`.
 
 ## Test automatici dell'API
 
@@ -42,7 +94,7 @@ Esito atteso: **23 OK, 0 KO**.
 
 ### Parte B: domande del design (da valutare a mano)
 
-Senza `--solo-a`, dopo la parte A lo script pone le domande della sezione 6 del design attraverso la route. Per ognuna stampa gli strumenti usati (`toolsUsed`), le sezioni del manuale (`sources`), il `chartUrl`, la durata e un estratto della risposta. Non c'è un esito automatico. Si confronta con i [Valori attesi](#valori-attesi).
+Senza `--solo-a`, dopo la parte A lo script pone le domande della sezione 6 del design attraverso la route. Per ognuna stampa gli strumenti usati (`toolsUsed`), le sezioni del manuale (`sources`), il `chartUrl`, la durata e un estratto della risposta. Non c'è un esito automatico. Si confronta con i [Valori attesi](#valori-attesi). Oggi la misura automatica delle risposte del modello è la [valutazione automatica](#valutazione-automatica): la parte B resta per l'ispezione a mano di risposte, strumenti e argomenti passati agli strumenti.
 
 - I test 5, 5b e 5c sono conversazioni vere sulla stessa sessione.
 - Il 4b si ripete tre volte, perché la parte sui dati ha un [limite noto](#limiti-noti-del-data-agent).
@@ -122,7 +174,7 @@ Distanze coseno dei primi 4 passaggi, misurate sul manuale indicizzato (18 chunk
 
 Il data agent è un LLM che scrive ed esegue codice: alcune domande hanno quindi un'affidabilità inferiore alla media. Sono limiti dichiarati, non errori da inseguire nei test.
 
-- **"I 3 CB con il duels_won_pct più alto nell'osservazione più recente"**: il risultato varia da un giro all'altro (da 1 su 5 a circa 7 su 10 nelle prove). L'errore è sempre lo stesso: compare solo Pereira. Con "attuale" al posto di "nell'osservazione più recente" i test hanno dato 10 su 10; la demo usa questa formulazione. Passando dall'orchestratore, l'espressione può essere riscritta in "nell'ultima stagione".
+- **"I 3 CB con il duels_won_pct più alto nell'osservazione più recente"**: il risultato varia da un giro all'altro (da 1 su 5 a circa 7 su 10 nelle prove). L'errore è sempre lo stesso: compare solo Pereira. Con "attuale" al posto di "nell'osservazione più recente" i test hanno dato 10 su 10; la demo usa questa formulazione. Passando dall'orchestratore, l'espressione può essere riscritta in "nell'ultima stagione". Anche con "attuale" l'errore resta raro ma possibile: vedi la [valutazione automatica](#valutazione-automatica).
 - Le risposte non dichiarano i codici di ruolo usati nei filtri (0 su 8), anche se i filtri sono corretti.
 - Il CDM è conteggiato tra i centrocampisti. Il manuale (§3.3) lo valuta "come un difensore aggiunto", ma questo riguarda le metriche, non il gruppo di ruolo.
 - "Esterni" e "laterali" non sono mappati su un ruolo (termine ambiguo): ci si aspetta un chiarimento o i codici dichiarati.
@@ -132,7 +184,7 @@ Il data agent è un LLM che scrive ed esegue codice: alcune domande hanno quindi
 - Un solo grafico per esecuzione.
 - Alcune date del CSV possono diventare valori mancanti in fase di lettura.
 
-Un'ulteriore limitazione, comune a tutto il sistema, è che il numero di campioni di ogni prova è piccolo (2–8): differenze di poco conto tra un giro e l'altro sono rumore.
+Un'ulteriore limitazione, comune alle prove a mano, è che il numero di campioni di ogni prova è piccolo (2–8): differenze di poco conto tra un giro e l'altro sono rumore. Per misurare un cambiamento si usa la [valutazione automatica](#valutazione-automatica), con N ripetizioni.
 
 ## Domande end-to-end da provare dall'interfaccia
 
@@ -149,7 +201,7 @@ Elenco di partenza per la prova manuale dalla chat (<http://localhost:5173>), co
 
 ## Script di test del data agent
 
-In `data_agent/scripts/` ci sono due script per provare il data agent da solo, senza passare dal back end e dall'interfaccia. Si lanciano da `data_agent/`, con il `venv` attivo e la chiave OpenAI in `data_agent/.env`. Entrambi chiamano il modello e consumano quindi crediti OpenAI; nessuno dei due scrive file.
+In `data_agent/scripts/`, oltre agli script del [benchmark](#benchmark), ci sono due script per provare il data agent da solo, senza passare dal back end e dall'interfaccia. Si lanciano da `data_agent/`, con il `venv` attivo e la chiave OpenAI in `data_agent/.env`. Entrambi chiamano il modello e consumano quindi crediti OpenAI; nessuno dei due scrive file.
 
 ### `traccia_agente.py`
 
@@ -245,8 +297,8 @@ Il repository è stato clonato in una cartella nuova e installato seguendo solo 
 
 Punti emersi e corretti nel README:
 
-- **Python 3.13 su macOS**: il comando `python3` di sistema è la versione 3.9 e `python3.13` non esiste se non è stato installato; il README indica ora come installarlo e come controllare la versione.
-- **URL senza `http://` nel `.env`**: il back end parte lo stesso e l'errore compare alla prima domanda che usa il servizio; la tabella dei problemi descrive ora il sintomo reale.
+- **Python 3.13 su macOS**: il comando `python3` di sistema è la versione 3.9 e `python3.13` non esiste se non è stato installato; le istruzioni di installazione (oggi in [`docs/INSTALLAZIONE.md`](INSTALLAZIONE.md#prerequisiti)) indicano come installarlo e come controllare la versione.
+- **URL senza `http://` nel `.env`**: il back end parte lo stesso e l'errore compare alla prima domanda che usa il servizio; la [tabella dei problemi](PROBLEMI.md) descrive ora il sintomo reale.
 
 ## Verifica da clone pulito (27 ottobre 2026)
 
@@ -284,7 +336,7 @@ Il back end non parte se le tre variabili `RATE_LIMIT_*` sono presenti solo in p
 
 ## Prove del container in locale
 
-Il container della demo ([Demo online e deploy](../README.md#demo-online-e-deploy)) è stato costruito e provato in locale con Docker prima di pubblicarlo (25 ottobre 2026).
+Il container della demo ([`docs/DEPLOY.md`](DEPLOY.md)) è stato costruito e provato in locale con Docker prima di pubblicarlo (25 ottobre 2026).
 
 | Prova | Esito |
 |---|---|
@@ -298,7 +350,7 @@ Il container della demo ([Demo online e deploy](../README.md#demo-online-e-deplo
 
 ## Simulazione con risorse ridotte
 
-Prima di scegliere la piattaforma è stato simulato in locale il piano gratuito di Render, con il container limitato a 0,1 CPU e 512 MB di memoria, e con una regola di decisione fissata prima della prova ([Scelta della piattaforma](../README.md#scelta-della-piattaforma)):
+Prima di scegliere la piattaforma è stato simulato in locale il piano gratuito di Render, con il container limitato a 0,1 CPU e 512 MB di memoria ([Scelta della piattaforma](DEPLOY.md#scelta-della-piattaforma)):
 
 ```bash
 docker run --cpus=0.1 --memory=512m ...
@@ -372,7 +424,7 @@ Per provarlo online i valori sono stati abbassati a 3 e poi ripristinati (20 per
 
 ### Log
 
-Controllati i log completi dello Space dopo le prove: nessuna chiave, nessun traceback, indirizzi IP solo mascherati. Nei log del back end compaiono gli argomenti che l'orchestratore passa agli strumenti (le domande riformulate): è un limite dichiarato nel [README](../README.md#la-demo-online).
+Controllati i log completi dello Space dopo le prove: nessuna chiave, nessun traceback, indirizzi IP solo mascherati. Nei log del back end compaiono gli argomenti che l'orchestratore passa agli strumenti (le domande riformulate): è un limite dichiarato in [`docs/SICUREZZA.md`](SICUREZZA.md#la-demo-online).
 
 ### Non ancora osservato
 

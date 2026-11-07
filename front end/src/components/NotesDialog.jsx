@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 // Testo delle note: solo contenuto statico, nessuna chiamata di rete. Se l'architettura
-// o i limiti cambiano, va riletto insieme al README della radice del repository.
+// o i limiti cambiano, va riletto insieme al README e ai documenti di docs/.
 const SECTIONS = [
   {
     title: "Cos'è",

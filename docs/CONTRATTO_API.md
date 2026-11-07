@@ -1,6 +1,6 @@
 # Contratto API — ScoutEdge Analytics
 
-**Versione:** 1.1 — 2026-10-24
+**Versione:** 1.2 — 2026-11-02
 **Stato:** approvato
 
 > Riferimento unico per l'interfaccia tra front end e back end. Ogni modifica incrementa la versione e viene annotata nello storico in fondo. Se un'implementazione richiede di discostarsi dal contratto, si aggiorna prima il contratto e poi il codice.
@@ -82,7 +82,7 @@ Esempio di risposta con analisi dati e grafico:
 - Il front end mostra l'immagine con `<img src={VITE_API_URL + chartUrl} alt="Grafico generato dall'analisi dei dati">`, sotto il testo della risposta.
 - Al massimo **un grafico per risposta**: se nello stesso turno ne vengono generati più di uno, vale l'ultimo.
 - `reply` non contiene mai link o path all'immagine.
-- I PNG restano su disco: un `chartUrl` resta valido finché il file esiste (online, fino al riavvio della demo).
+- **Conservazione dei grafici**: il data agent conserva i PNG per **2 ore** e al massimo gli **ultimi 200 file**. La pulizia avviene all'avvio del data agent e prima di ogni nuovo salvataggio, e riguarda solo i file con il nome `chart_xxxxxxxx.png`. Un `chartUrl` resta valido finché il file esiste; dopo, `GET /charts/:filename` risponde 404 `NOT_FOUND`. Online il riavvio della demo cancella comunque tutti i grafici.
 
 ### Limite di frequenza
 - Si applica **solo** a `POST /api/chat`, prima della validazione del corpo: ogni richiesta conta, anche se poi viene rifiutata per altri motivi. `GET /`, `GET /charts/:filename` e le richieste di preflight della CORS non contano.
@@ -98,7 +98,7 @@ Esempio di risposta con analisi dati e grafico:
 ## GET /charts/:filename
 - `filename` deve rispettare l'espressione regolare `^chart_[0-9a-f]{8}\.png$`, altrimenti 400 `INVALID_REQUEST` (protezione da path traversal).
 - Il back end recupera il file da FastAPI e lo restituisce con `Content-Type: image/png`.
-- 404 `NOT_FOUND` se il file non esiste.
+- 404 `NOT_FOUND` se il file non esiste (anche quando è stato cancellato dalla pulizia automatica).
 
 ## GET /
 Health check del back end: `{ "status": "ok" }`. Online non è esposto (la radice dell'URL pubblico serve il front end).
@@ -131,6 +131,8 @@ Se Chroma o il data agent non sono raggiungibili, o FastAPI risponde con un erro
 - `toolsUsed` include comunque lo strumento tentato;
 - **comportamento garantito:** in questo caso l'agente non inventa dati numerici né contenuti del manuale.
 
+Rientra in questo caso anche il data agent occupato: l'esecuzione del codice generato è serializzata, e se l'attesa supera il tempo massimo (30 s) lo strumento restituisce un errore leggibile al modello.
+
 ---
 
 ## Timeout
@@ -148,6 +150,7 @@ Durante tutta l'attesa il front end mostra l'indicatore di digitazione/caricamen
 - `reply` reso come testo/Markdown **senza HTML grezzo** (niente `dangerouslySetInnerHTML`).
 - Gli errori vengono mostrati in chat come messaggio di sistema usando `error.message`; il messaggio dell'utente resta visibile. Vale anche per `RATE_LIMITED`.
 - `toolsUsed` e `sources` vengono mostrati come etichette discrete sotto la risposta (es. "📄 Handbook — 7. SLA e procedura di supporto", "📊 Analisi dati").
+- Se l'immagine di un grafico non si carica (file cancellato dalla pulizia o demo riavviata), il front end mostra al suo posto un testo di riserva ("Il grafico non è al momento disponibile.") invece dell'icona di immagine rotta, senza nessuna nuova richiesta al back end.
 
 ## Obblighi del back end
 - Validazione dell'input prima di qualsiasi chiamata all'LLM.
@@ -185,3 +188,4 @@ curl -s -X POST http://localhost:3001/api/chat \
 ## Storico versioni
 - **1.0 — 2026-10-01**: prima versione approvata (decisioni: camelCase, `toolsUsed` e `sources` nella risposta, sessione sconosciuta → nuova sessione, `SESSION_BUSY`, limiti 2000 caratteri / 20 messaggi / 30 min / 90-120-130 s).
 - **1.1 — 2026-10-24**: demo online. Limite di frequenza su `POST /api/chat` (per client e globale, configurabile, disattivato senza variabili) con il nuovo errore 429 `RATE_LIMITED` e l'intestazione `Retry-After`; `trust proxy` configurabile; base URL e CORS online; proxy online con timeout non inferiore a 130 s; `GET /` non esposto online; nessuna modifica richiesta al front end.
+- **1.2 — 2026-11-02**: conservazione dei grafici (2 ore, massimo 200 file, pulizia all'avvio e prima di ogni salvataggio; 404 `NOT_FOUND` dopo la cancellazione); testo di riserva nel front end per un grafico non più disponibile; data agent occupato (esecuzione del codice serializzata) trattato come guasto di un singolo strumento. Nessun campo né codice di errore nuovo.
