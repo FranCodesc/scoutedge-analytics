@@ -17,7 +17,7 @@ const SECTIONS = [
   },
   {
     title: "Limiti",
-    text: "Il data agent esegue codice generato dal modello senza sandbox: il sistema è pensato per un uso locale e dimostrativo. Le risposte dei modelli non sono deterministiche, quindi i numeri importanti vanno verificati. In produzione servirebbero una sandbox isolata, autenticazione e limiti di frequenza.",
+    text: "Il data agent esegue codice generato dal modello senza sandbox. La demo online espone il sistema a internet con difese a strati (un solo punto esposto, limite di frequenza, chiave dedicata con tetto di spesa), che riducono il rischio ma non lo eliminano. Le risposte dei modelli non sono deterministiche, quindi i numeri importanti vanno verificati. In produzione servirebbero una sandbox isolata e l'autenticazione.",
   },
 ];
 
