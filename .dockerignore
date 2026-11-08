@@ -20,10 +20,12 @@ docs
 data_agent/prototype.ipynb
 
 # Test e strumenti di sviluppo del data agent: non servono in produzione
-# (l'immagine installa solo requirements.txt).
+# (l'immagine installa solo requirements.txt). In scripts/ stanno gli script
+# di regressione, traccia e benchmark con i loro risultati.
 data_agent/tests
 data_agent/pytest.ini
 data_agent/requirements-dev.txt
+data_agent/scripts
 **/.pytest_cache
 
 # Test e strumenti di sviluppo di back end e front end: non servono in produzione.

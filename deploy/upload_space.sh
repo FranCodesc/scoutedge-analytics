@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Carica sullo Space di Hugging Face una copia dei soli file committati.
+# Carica sullo Space di Hugging Face una copia dei file committati che servono
+# allo Space, cioè tutti tranne la cartella docs/.
 #
 # Uso:
 #   deploy/upload_space.sh <utente/nome-space> --prova   elenca i file, non carica nulla
@@ -9,6 +10,12 @@
 # contiene esattamente ciò che sta nel commit corrente (HEAD), quindi non
 # possono finire sullo Space file locali non versionati come .env, venv/ o
 # node_modules/. Le modifiche non ancora committate non vengono caricate.
+#
+# Perché senza docs/: la documentazione sta su GitHub, lo Space non la usa e la
+# build la esclude già dall'immagine con il .dockerignore. "hf upload" però non
+# cancella i file che sullo Space ci sono già: per questo il caricamento chiede
+# anche di togliere docs/ (solo quella, con uno schema limitato) dallo Space.
+#
 # Per caricare serve lo strumento "hf" (pip install -U huggingface_hub) e
 # l'accesso già effettuato con "hf auth login": il token non passa da questo script.
 
@@ -39,6 +46,9 @@ trap 'rm -rf "$TMP"' EXIT
 # Esportazione dei soli file committati.
 git archive HEAD | tar -x -C "$TMP"
 
+# Lo Space non usa la documentazione: non si carica.
+rm -rf "$TMP/docs"
+
 # Lo Space legge la propria configurazione dal README.md nella radice: si
 # sostituisce quello del repo (senza intestazione) con quello dello Space.
 cp deploy/README_SPACE.md "$TMP/README.md"
@@ -64,4 +74,6 @@ if ! command -v hf >/dev/null 2>&1; then
   exit 1
 fi
 
-hf upload "$SPACE" "$TMP" . --repo-type=space --commit-message "Aggiornamento dal commit $(git rev-parse --short HEAD)"
+# --delete "docs/*": cancella dallo Space la docs/ caricata in precedenza,
+# sottocartelle comprese. Mai "*": toglierebbe anche i file creati da Hugging Face.
+hf upload "$SPACE" "$TMP" . --repo-type=space --delete "docs/*" --commit-message "Aggiornamento dal commit $(git rev-parse --short HEAD)"

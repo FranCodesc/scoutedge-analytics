@@ -91,8 +91,9 @@ Lo script:
 
 - parte da `git archive HEAD`, quindi carica **solo i file committati**: `.env`, `venv/`, `node_modules/` e le modifiche non ancora committate non possono finire sullo Space (se ci sono modifiche non committate, lo script avvisa);
 - sostituisce il `README.md` del repository con `deploy/README_SPACE.md`, che ha l'intestazione di configurazione che lo Space legge (SDK Docker, porta 7860);
+- non carica `docs/` (la documentazione sta su GitHub) e la rimuove dallo Space, dove era stata caricata in precedenza;
 - si rifiuta di caricare se l'esportazione contiene file vietati (`.env*` tranne `.env.example`, `venv`, `node_modules`, `chroma_data`, `.git`);
-- usa `hf upload`, che aggiunge e sovrascrive file ma **non cancella** sullo Space quelli tolti dal repository: vanno rimossi a mano.
+- usa `hf upload`, che aggiunge e sovrascrive file ma **non cancella** sullo Space quelli tolti dal repository: vanno rimossi a mano, tranne `docs/`, che lo script toglie da solo.
 
 Dopo il caricamento lo Space ricostruisce l'immagine (circa 1 minuto) e riavvia il container.
 
