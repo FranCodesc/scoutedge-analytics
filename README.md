@@ -75,4 +75,4 @@ Si lanciano dalla radice del repository, dopo l'installazione: sono 437 test aut
 - [`docs/DESIGN_ORCHESTRATORE.md`](docs/DESIGN_ORCHESTRATORE.md): ciclo ReAct, strumenti e system prompt dell'orchestratore.
 - [`docs/decisions/`](docs/decisions/README.md): storia e motivazioni delle scelte principali, con le alternative scartate.
 - [`docs/CHANGELOG_HANDBOOK.md`](docs/CHANGELOG_HANDBOOK.md): storico delle versioni del manuale.
-- [`docs/ScoutEdge_Analytics_presentazione.pdf`](docs/ScoutEdge_Analytics_presentazione.pdf): presentazione di 16 slide (scenario, architettura, esempi, sfide, test e limiti).
+- [`docs/ScoutEdge_Analytics_presentazione.pdf`](docs/ScoutEdge_Analytics_presentazione.pdf): presentazione di 18 slide (scenario, architettura, esempi, sfide, test, benchmark e limiti).

@@ -143,7 +143,7 @@ Le versioni esatte sono in `back end/package.json`, `front end/package.json` e `
 │   ├── TEST.md                    test automatici, valutazione, verifiche, valori attesi
 │   ├── CHANGELOG_HANDBOOK.md      storico delle versioni del manuale
 │   ├── decisions/                 storia e motivazioni delle scelte principali
-│   └── ScoutEdge_Analytics_presentazione.pdf   presentazione (16 slide)
+│   └── ScoutEdge_Analytics_presentazione.pdf   presentazione (18 slide)
 ├── back end/
 │   ├── .env.example
 │   ├── package.json
