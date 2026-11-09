@@ -35,7 +35,7 @@ Per questo il sistema è pensato per un uso dimostrativo. La demo online lo espo
 - **Dipendenze di sviluppo del front end.** `npm audit` può segnalare vulnerabilità in pacchetti usati solo in sviluppo e in fase di build: non fanno parte del codice che arriva al browser. Lo si verifica da `front end/` con `npm audit --omit=dev`, che non segnala nessuna vulnerabilità nelle dipendenze che arrivano al browser.
 - **Un codice generato che non termina tiene il lock.** Le altre analisi ricevono "servizio occupato" dopo 30 secondi, e nessun timeout interrompe quel codice ([decisions/06](decisions/06-esecuzione-del-codice-generato.md)).
 - **Limiti di plausibilità dello schema scelti a mano.** Sono larghi: fermano gli errori che la pulizia corregge, non un dato vero ma insolito ([decisions/05](decisions/05-pulizia-e-schema-dei-dati.md)).
-- **Valutazione automatica fuori dall'integrazione continua.** Copre 13 domande e si lancia a mano, perché costa token ([`docs/TEST.md`](TEST.md#valutazione-automatica), [decisions/07](decisions/07-test-e-valutazione.md)).
+- **Valutazione automatica fuori dall'integrazione continua.** Copre 13 domande e si lancia a mano, perché costa token. Confronta l'insieme degli strumenti usati e non conta le chiamate doppie allo stesso strumento ([`docs/TEST.md`](TEST.md#valutazione-automatica), [decisions/07](decisions/07-test-e-valutazione.md)).
 - **Benchmark su una sola macchina**, più veloce della CPU dello Space ([decisions/09](decisions/09-pandas-e-non-duckdb.md)).
 
 ## Limiti risolti

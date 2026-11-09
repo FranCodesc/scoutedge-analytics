@@ -45,15 +45,18 @@ npm run eval -- --conferma --n=20 --solo=cb_metodologia_e_dati     # una sola do
 
 Lo script salva ogni corsa in `back end/eval/risultati/` (JSON con tutte le risposte e riepilogo in Markdown). La valutazione non gira nell'integrazione continua: chiama il modello e costa token.
 
-| Corsa (2026-11-04) | Ripetizioni | Valori corretti | Strumenti corretti |
+| Corsa | Ripetizioni | Valori corretti | Strumenti corretti |
 |---|---|---|---|
-| Prima corsa completa, non salvata nel repository | 5 | 78 su 80 | — |
-| [Corsa completa](../back%20end/eval/risultati/corsa-20261104-1008.md) | 5 | 80 su 80 | 80 su 80 |
-| [Difensori centrali](../back%20end/eval/risultati/corsa-20261104-1030.md) (`cb_metodologia_e_dati`) | 20 | 20 su 20 | 20 su 20 |
+| Prima corsa completa del 4 novembre, non salvata nel repository | 5 | 78 su 80 | — |
+| [Corsa completa del 4 novembre](../back%20end/eval/risultati/corsa-20261104-1008.md) | 5 | 80 su 80 | 80 su 80 |
+| [Difensori centrali, 4 novembre](../back%20end/eval/risultati/corsa-20261104-1030.md) (`cb_metodologia_e_dati`) | 20 | 20 su 20 | 20 su 20 |
+| [Corsa completa del 9 novembre](../back%20end/eval/risultati/corsa-20261109-1046.md), da clone pulito | 5 | 79 su 80 | 80 su 80 |
 
 La prima corsa completa è una corsa vera e si conta. Dei due turni sbagliati, uno è una risposta sui tre difensori centrali con il solo Pereira; dell'altro non resta traccia ([decisions/07](decisions/07-test-e-valutazione.md)).
 
-**Limite intermittente sui difensori centrali.** Sulla domanda "Poi mostrami i 3 CB con il duels_won_pct attuale più alto" l'errore è sempre lo stesso: compare solo Pereira. Nella prima corsa completa è comparso almeno una volta; nelle corse salvate le risposte corrette sono 25 su 25 (5 con N=5 e 20 con N=20). 25 ripetizioni senza errori non bastano a dire che non c'è più: resta un limite dichiarato (vedi [Limiti noti del data agent](#limiti-noti-del-data-agent)).
+**Limite intermittente sui difensori centrali.** Sulla domanda "Poi mostrami i 3 CB con il duels_won_pct attuale più alto" l'errore è sempre lo stesso: compare solo Pereira (nella corsa del 9 novembre mancano Balaguer e Ito). Nella prima corsa completa è comparso almeno una volta; nelle corse salvate le risposte corrette sono 29 su 30 (5 su 5 e 20 su 20 il 4 novembre, 4 su 5 il 9 novembre). Con un errore su 30 ripetizioni salvate, più almeno uno nella prima corsa, non si può dire che il limite sia superato: resta un limite dichiarato (vedi [Limiti noti del data agent](#limiti-noti-del-data-agent)).
+
+**Chiamate doppie allo stesso strumento.** La valutazione confronta l'insieme degli strumenti usati e non il numero di chiamate: due chiamate a `analyze_data` nello stesso turno non risultano come errore. Online, l'8 novembre, nel secondo turno della conversazione sulla stagione precedente l'orchestratore ha chiamato `analyze_data` due volte (stagioni 2023/24 e 2024/25) invece di una, con la risposta corretta ([Prove online](#prove-online-8-novembre-2026)). Nel log del back end le chiamate doppie sono 0 su 80 turni nella corsa del 9 novembre e 0 su 1 nella prova dall'interfaccia della stessa conversazione ([Verifica da clone pulito](#verifica-da-clone-pulito-9-novembre-2026)).
 
 ## Benchmark
 
@@ -321,6 +324,28 @@ Punto emerso e corretto:
 
 - **Nuovi avvisi di sicurezza nel front end**: rispetto al 19 ottobre `npm audit` segnalava due avvisi nuovi di gravità alta, su `vite` (server di sviluppo) e su `zod` (usato da `eslint-plugin-react-hooks`), entrambi dipendenze di sviluppo. Sono stati corretti nel repository con `npm audit fix`, senza `--force` (`vite` 8.3.5, `zod` 4.6.7); il clone è stato riallineato con `git pull` e le prove successive sono state eseguite con le nuove versioni. Resta solo l'avviso moderato già noto, descritto nel [README del front end](../front%20end/README.md#limiti-noti).
 
+## Verifica da clone pulito (9 novembre 2026)
+
+Il repository è stato clonato in una cartella nuova al commit `2c8a5eb` e installato seguendo solo il [README](../README.md) e [`docs/INSTALLAZIONE.md`](INSTALLAZIONE.md). I file `.env` sono stati ricostruiti dai `.env.example` attuali più la chiave: l'unica differenza rispetto agli esempi è la riga `OPENAI_API_KEY`.
+
+| Passo | Esito |
+|---|---|
+| Test automatici | 136 del data agent (circa 20 s), 225 del back end, 76 del front end; lint pulito |
+| `npm audit` del back end | Nessuna vulnerabilità |
+| `npm audit` del front end | 6 moderate, tutte su dipendenze di sviluppo; con `--omit=dev` nessuna. Sono gli stessi due avvisi descritti nel [README del front end](../front%20end/README.md#limiti-noti) (`minimatch` tramite ESLint, `postcss-selector-parser` tramite `@tailwindcss/typography`); le correzioni richiedono ancora `--force` con un downgrade |
+| Indicizzazione del manuale, con il comando del README | 18 chunk, 0 orfani |
+| Avvio del data agent | Dataframe pulito di forma (1185, 35) |
+| `npm run test:api -- --solo-a` | 23 OK, 0 KO |
+| Le quattro domande della demo dall'interfaccia | Corrette; al secondo turno della quarta una sola chiamata ad `analyze_data` |
+| `npm run eval -- --conferma` (N=5, [corsa del 9 novembre](../back%20end/eval/risultati/corsa-20261109-1046.md)) | Valori corretti 79 su 80, strumenti 80 su 80, tempo medio 6,8 s; costo: vedi sotto |
+| Chiamate doppie ad `analyze_data`, contate nel log del back end | 0 su 80 turni |
+
+Punti da notare:
+
+- **Python.** Sul Mac di prova `python3.13` non è nel `PATH` (Python 3.13 viene da Anaconda): il `venv` è stato creato con il percorso completo dell'interprete, come indicato in [`docs/INSTALLAZIONE.md`](INSTALLAZIONE.md#installazione) (Python 3.13.9).
+- **Unico errore della valutazione.** Domanda sui difensori centrali, ripetizione 1: mancano Balaguer e Ito, compare solo Pereira. È il [limite intermittente](#valutazione-automatica) già dichiarato.
+- **Costo.** Tutte le prove del giorno (indicizzazione, test dell'API, domande della demo e valutazione) hanno consumato circa 670 mila token in ingresso e 19 mila in uscita, per meno di 0,10 $. La stima dello script, circa 0,27 $ per la sola valutazione, non considera la cache dei prompt: circa l'80% dei token in ingresso è stato letto dalla cache.
+
 ## Prove del limite di frequenza in locale
 
 Il limite di frequenza su `POST /api/chat` ([Limite di frequenza](CONTRATTO_API.md#limite-di-frequenza)) è spento senza variabili d'ambiente e si prova a parte, con valori bassi, per non disturbare i test normali. Le richieste di prova usano un messaggio non valido, che il limite conta comunque perché sta prima della validazione del corpo.
@@ -429,3 +454,49 @@ Controllati i log completi dello Space dopo le prove: nessuna chiave, nessun tra
 ### Non ancora osservato
 
 La pausa automatica dello Space dopo 48 ore senza visite (non modificabile con la CPU basic) non è stata ancora osservata; è il comportamento dichiarato dalla piattaforma.
+
+## Prove online (8 novembre 2026)
+
+Prove sulla demo (<https://francodesc-scoutedge-analytics.hf.space>) appena ricaricata: Space a `9a92916`, che corrisponde al commit `c5fe3db` del repository.
+
+### Avvio e configurazione
+
+| Prova | Esito |
+|---|---|
+| Avvio del container | circa 19 s |
+| Indicizzazione del manuale | 18 chunk |
+| Data agent | dataframe pulito di forma (1185, 35) |
+| Limite di frequenza | 20 per IP e 100 in totale ogni 15 minuti, con `trust proxy: 2` |
+| Stato dei servizi | "Tutti i servizi sono attivi" |
+| Log | nessuna chiave, nessun traceback |
+| File sullo Space | 117 (116 dal repository più `.gitattributes`), nessuno sotto `docs/` |
+
+### Le quattro domande della demo: 4 su 4
+
+Dal browser:
+
+| Domanda | Esito |
+|---|---|
+| Tempo di prima risposta per priorità alta | Corretta: solo manuale |
+| 10 giocatori con il valore di mercato più alto, con grafico | Corretta, con grafico |
+| Metodologia per i CB e poi i 3 CB con il `duels_won_pct` più alto | Corretta: 120 Pereira 72.0 · 122 Balaguer 67.9 · 6 Ito Yuta 64.1 |
+| Conversazione: scout_rating medio nell'ultima stagione, poi "e nella stagione precedente?" | Corretta: 65.11, poi 66.18 |
+
+Nel secondo turno dell'ultima conversazione l'orchestratore ha chiamato `analyze_data` due volte (stagioni 2023/24 e 2024/25) invece di una; la risposta è corretta. Vedi [Chiamate doppie allo stesso strumento](#valutazione-automatica).
+
+### Rotte e intestazioni
+
+| Prova | Esito |
+|---|---|
+| Intestazione `X-Powered-By` | assente |
+| `/analyze`, `/docs`, `/openapi.json`, `/.env` | tutti 404 |
+
+### Concorrenza
+
+Prova del lock attorno all'esecuzione del codice generato ([decisions/06](decisions/06-esecuzione-del-codice-generato.md)) sul codice finale.
+
+| Prova | Esito |
+|---|---|
+| Due domande con grafico lanciate in parallelo ("10 giocatori per valore di mercato" e "scout_rating medio per ruolo") | due `chartUrl`, due PNG diversi e corretti (49.624 e 25.852 byte) |
+| Log | le due analisi partono insieme e le esecuzioni del codice si susseguono (8,2 s e 11,7 s): il lock le serializza |
+| Terza domanda con grafico, poi riapertura dei due grafici precedenti | i due grafici si caricano ancora |

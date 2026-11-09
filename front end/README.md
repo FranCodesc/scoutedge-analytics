@@ -108,9 +108,9 @@ Il formato delle richieste e delle risposte, i codici di errore, i limiti (2000 
 ## Limiti noti
 
 - Le variabili `VITE_` sono pubbliche per costruzione (vedi sopra).
-- `npm audit` segnala 8 vulnerabilità moderate, tutte su dipendenze di **sviluppo**: non arrivano nel codice servito al browser (`npm audit --omit=dev` non segnala nulla). Sono due avvisi, non corretti per questi motivi:
+- Al controllo del 9 novembre 2026 `npm audit` segnala 6 vulnerabilità moderate, tutte su dipendenze di **sviluppo**: non arrivano nel codice servito al browser (`npm audit --omit=dev` non segnala nulla). Sono due avvisi, non corretti per questi motivi:
   - `postcss-selector-parser` (consumo eccessivo di CPU con selettori molto lunghi), tramite `@tailwindcss/typography`. La correzione automatica richiede `--force` e un downgrade del plugin alla versione 0.5.4, quindi non è applicata.
-  - `minimatch` (denial of service con pattern costruiti ad arte), tramite `eslint` e i suoi pacchetti (`@eslint/config-array`, `@eslint/js`, `@eslint-community/eslint-utils`, `eslint-plugin-react-refresh`). Non esiste ancora una versione corretta compatibile: l'unica proposta di `--force` è un downgrade di ESLint dalla versione 10 alla 9. ESLint legge i pattern dalla configurazione del progetto, non da input esterni.
+  - `minimatch` (denial of service con pattern costruiti ad arte), tramite la catena `@eslint/config-array` → `eslint` → `@eslint/js`. Non esiste ancora una versione corretta compatibile: l'unica proposta di `--force` è un downgrade di ESLint dalla versione 10 alla 9. ESLint legge i pattern dalla configurazione del progetto, non da input esterni.
 
   `npm audit fix` senza `--force` ha aggiornato soltanto `eslint` da 10.11.0 a 10.14.0. Le dipendenze dei test (Vitest, jsdom, Testing Library) non aggiungono avvisi. Da riesaminare quando escono versioni corrette.
 - Il 27 ottobre 2026, durante la verifica da un clone nuovo prima della consegna, `npm audit` ha segnalato avvisi nuovi di gravità alta su `vite` (server di sviluppo) e su `zod` (usato da `eslint-plugin-react-hooks`), anche questi solo di sviluppo. Sono stati corretti con `npm audit fix`, senza `--force`: `vite` da 8.3.1 a 8.3.5 e `zod` da 4.6.5 a 4.6.7; dopo l'aggiornamento lint e build sono stati ripetuti senza errori.

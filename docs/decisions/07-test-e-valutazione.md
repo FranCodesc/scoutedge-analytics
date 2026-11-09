@@ -31,7 +31,8 @@ Fino al 2026-11-02 le verifiche erano script che chiamano il modello reale (`dat
 
 - 136 test del data agent, 225 del back end, 76 del front end; nella CI circa un minuto per le tre suite.
 - La prima corsa completa (N=5, 2026-11-04) ha dato 78 turni su 80 con i valori corretti: in una risposta sui tre difensori centrali compariva solo Pereira, il limite intermittente già noto; dell'altro turno sbagliato non resta traccia. Non è stata salvata nel repo.
-- Le due corse salvate: 80/80 valori e 80/80 strumenti con N=5 ([corsa](../../back%20end/eval/risultati/corsa-20261104-1008.md)), 20/20 sulla domanda dei difensori centrali con N=20 ([corsa](../../back%20end/eval/risultati/corsa-20261104-1030.md)). L'errore resta un limite dichiarato: 25 ripetizioni senza errori non bastano a dire che non c'è più.
+- Le tre corse salvate: 80/80 valori e 80/80 strumenti con N=5 il 4 novembre ([corsa](../../back%20end/eval/risultati/corsa-20261104-1008.md)); 20/20 sulla domanda dei difensori centrali con N=20 il 4 novembre ([corsa](../../back%20end/eval/risultati/corsa-20261104-1030.md)); 79/80 valori e 80/80 strumenti con N=5 il 9 novembre, da un clone pulito ([corsa](../../back%20end/eval/risultati/corsa-20261109-1046.md)), con l'unico errore sulla domanda dei difensori centrali (compare solo Pereira). Su quella domanda le risposte corrette sono 29 su 30 nelle corse salvate, più almeno un errore nella prima corsa completa: l'errore resta un limite dichiarato.
+- La valutazione confronta l'insieme degli strumenti, non il numero di chiamate: nel log del back end le chiamate doppie ad `analyze_data` sono 0 su 80 turni nella corsa del 9 novembre.
 
 ## Dove nel codice
 
