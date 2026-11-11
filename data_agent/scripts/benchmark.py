@@ -1,14 +1,15 @@
-"""Benchmark del data agent su dataset di dimensioni crescenti: pandas contro DuckDB.
+"""Benchmark del data agent su dataset di dimensioni crescenti: pandas, DuckDB e SQLite.
 
 Per ogni dimensione (1x = il CSV reale, 10x, 100x...) misura, in un processo separato così
 che il picco di memoria di una dimensione non contamini la successiva:
 - avvio: read_csv, clean_scouting_data, verifica_dati_puliti (mediana di N ripetizioni);
 - memoria: dataframe pulito (memory_usage deep) e picco del processo durante l'avvio;
 - domande rappresentative, scritte come codice pandas deterministico (nessun modello) e
-  come SQL su DuckDB (sul dataframe, su una tabella DuckDB e su un file Parquet), con
-  controllo automatico che i risultati siano uguali;
-- l'alternativa per l'avvio (caricare i dati già puliti da Parquet) e la memoria di un
-  processo che usa solo DuckDB.
+  come SQL su DuckDB (sul dataframe, su una tabella DuckDB e su un file Parquet) e su
+  SQLite (modulo sqlite3 della libreria standard: in memoria, su file e su file con
+  indici), con controllo automatico che i risultati siano uguali;
+- l'alternativa per l'avvio (caricare i dati già puliti da Parquet o da SQLite) e la memoria
+  di un processo che usa solo DuckDB e di uno che usa solo SQLite.
 Il risultato di una corsa è un file JSON; il riepilogo leggibile lo produce
 benchmark_riepilogo.py. Nessuna chiamata al modello, nessuna chiave.
 
@@ -24,6 +25,7 @@ import json
 import os
 import platform
 import resource
+import sqlite3
 import statistics
 import subprocess
 import sys
@@ -122,6 +124,28 @@ DOMANDE_SQL = {
     FROM {t} WHERE player_id = 70 GROUP BY season ORDER BY season""",
 }
 
+# SQLite non ha QUALIFY: la riga più recente per giocatore si sceglie con una sottoquery che
+# numera le osservazioni e tiene la prima. Le altre tre domande sono identiche a quelle di
+# DuckDB (la stessa SQL, senza estensioni).
+_ATTUALE_SQLITE = """WITH att AS (
+    SELECT * FROM (
+        SELECT *, row_number() OVER (PARTITION BY player_id
+                                     ORDER BY observation_date DESC, _ord DESC) AS _pos
+        FROM {t})
+    WHERE _pos = 1)"""
+
+DOMANDE_SQLITE = {
+    "top10_valore_attuale": _ATTUALE_SQLITE + """
+    SELECT player_id, player_name, market_value_eur FROM att
+    ORDER BY market_value_eur DESC, player_id LIMIT 10""",
+    "rating_medio_per_stagione": DOMANDE_SQL["rating_medio_per_stagione"],
+    "top3_cb_duelli_attuali": _ATTUALE_SQLITE + """
+    SELECT player_id, player_name, duels_won_pct FROM att WHERE position = 'CB'
+    ORDER BY duels_won_pct DESC, player_id LIMIT 3""",
+    "giocatori_per_club": DOMANDE_SQL["giocatori_per_club"],
+    "giocatore_70_per_stagione": DOMANDE_SQL["giocatore_70_per_stagione"],
+}
+
 
 # ---------------------------------------------------------------------------
 # Strumenti di misura
@@ -183,6 +207,63 @@ def _fedelta(report_reale, report, n):
     escluse = ("grafie_originali", "grafie_finali", "nomi_distinti")
     return [(k, v * n, nuovo[k]) for k, v in reale.items()
             if isinstance(v, int) and not k.endswith(escluse) and nuovo[k] != v * n]
+
+# Indici del terzo modo SQLite: uno per ciò che fanno le domande, non uno per colonna.
+INDICI_SQLITE = {
+    # partizione e ordine delle funzioni di finestra; il prefisso player_id serve anche al
+    # filtro sul singolo giocatore
+    "idx_giocatore_data": "player_id, observation_date DESC, _ord DESC",
+    # raggruppamento per stagione e media: l'indice contiene già le due colonne
+    "idx_stagione_rating": "season, scout_rating",
+    # conteggio dei giocatori distinti per club
+    "idx_club_giocatore": "club, player_id",
+}
+
+
+def _carica_sqlite(con, dati):
+    """Scrive il dataframe nella tabella `dati` e restituisce i secondi impiegati."""
+    t0 = time.perf_counter()
+    dati.to_sql("dati", con, index=False)
+    con.commit()
+    return time.perf_counter() - t0
+
+
+def _crea_indici_sqlite(con):
+    """Crea gli indici di INDICI_SQLITE e aggiorna le statistiche del pianificatore
+    (ANALYZE). Restituisce i secondi impiegati."""
+    t0 = time.perf_counter()
+    for nome, colonne in INDICI_SQLITE.items():
+        con.execute(f"CREATE INDEX {nome} ON dati ({colonne})")
+    con.execute("ANALYZE")
+    con.commit()
+    return time.perf_counter() - t0
+
+
+def _domande_sqlite(con, modo, risultati_pandas, domande, ripetizioni):
+    """Esegue le 5 domande su una connessione SQLite (tabella `dati`): tempo con la stessa
+    `_misura` delle altre alternative e uguaglianza con pandas con la stessa `_uguali`.
+    I numeri vanno in domande[nome_domanda][modo]."""
+    for nome in DOMANDE_PANDAS:
+        sql = DOMANDE_SQLITE[nome].format(t="dati")
+        risultato = pd.read_sql_query(sql, con)
+        statistiche = _misura(lambda s=sql: pd.read_sql_query(s, con), ripetizioni)
+        statistiche["uguale_a_pandas"] = bool(_uguali(risultati_pandas[nome], risultato))
+        domande[nome][modo] = statistiche
+
+
+COLONNE_DATA = ["contract_expiry", "observation_date"]
+
+
+def _sqlite_a_dataframe(file_sqlite):
+    """Avvio alternativo: i dati già puliti dal file SQLite a un dataframe, con le due
+    colonne di data riconvertite da testo a data. Si toglie `_ord`, che serve solo agli
+    spareggi delle domande."""
+    con = sqlite3.connect(file_sqlite)
+    try:
+        return pd.read_sql_query("SELECT * FROM dati", con,
+                                 parse_dates=COLONNE_DATA).drop(columns="_ord")
+    finally:
+        con.close()
 
 
 # ---------------------------------------------------------------------------
@@ -281,7 +362,37 @@ def lavora_pandas(csv, n, ripetizioni, thread, cartella_parquet):
             statistiche["uguale_a_pandas"] = bool(_uguali(risultati_pandas[nome], risultato))
             domande[nome][modo] = statistiche
 
-    # --- alternativa per l'avvio: dati già puliti su Parquet
+    # --- domande con SQLite (modulo della libreria standard), in tre modi. Il file è nella
+    # cartella dei dataset sintetici. Il terzo modo riusa lo stesso file: gli indici si creano
+    # dopo aver misurato il secondo.
+    caricamento_sqlite = {}
+    file_sqlite = cartella_parquet / f"pulito_{n}x.db"
+    file_sqlite.unlink(missing_ok=True)
+
+    con_memoria = sqlite3.connect(":memory:")
+    caricamento_sqlite["to_sql_memoria_s"] = _carica_sqlite(con_memoria, con_ord)
+    _domande_sqlite(con_memoria, "sqlite_memoria", risultati_pandas, domande, ripetizioni)
+    con_memoria.close()
+
+    con_file = sqlite3.connect(file_sqlite)
+    caricamento_sqlite["to_sql_file_s"] = _carica_sqlite(con_file, con_ord)
+    caricamento_sqlite["dimensione_file_mb"] = file_sqlite.stat().st_size / MB
+    _domande_sqlite(con_file, "sqlite_file", risultati_pandas, domande, ripetizioni)
+
+    caricamento_sqlite["creazione_indici_s"] = _crea_indici_sqlite(con_file)
+    caricamento_sqlite["dimensione_file_con_indici_mb"] = file_sqlite.stat().st_size / MB
+    _domande_sqlite(con_file, "sqlite_file_indici", risultati_pandas, domande, ripetizioni)
+    con_file.close()
+
+    # --- alternativa per l'avvio: dati già puliti su Parquet o su SQLite. Da SQLite il
+    # dataframe deve essere uguale a quello pulito (indice a parte: riparte da 0).
+    letto = _sqlite_a_dataframe(file_sqlite)
+    try:
+        pd.testing.assert_frame_equal(letto, pulito.reset_index(drop=True))
+        sqlite_uguale = True
+    except AssertionError:
+        sqlite_uguale = False
+    del letto
     avvio_alternativo = {
         "parquet_a_dataframe": _misura(
             lambda: duckdb.connect().execute(
@@ -289,14 +400,17 @@ def lavora_pandas(csv, n, ripetizioni, thread, cartella_parquet):
         "parquet_a_vista_duckdb": _misura(
             lambda: duckdb.connect().execute(
                 f"CREATE VIEW v AS SELECT * FROM read_parquet('{parquet}')"), ripetizioni),
+        "sqlite_a_dataframe": dict(
+            _misura(lambda: _sqlite_a_dataframe(file_sqlite), ripetizioni),
+            uguale_al_pulito=sqlite_uguale),
     }
 
     return {
         "righe_grezze": righe_grezze, "righe_pulite": righe_pulite,
         "fedelta_pulizia": {"ok": not differenze, "differenze": differenze},
         "memoria": memoria, "avvio": avvio, "avvio_alternativo": avvio_alternativo,
-        "caricamento_duckdb": caricamento, "domande": domande,
-        "parquet": str(parquet),
+        "caricamento_duckdb": caricamento, "caricamento_sqlite": caricamento_sqlite,
+        "domande": domande, "parquet": str(parquet), "sqlite_file": str(file_sqlite),
     }
 
 
@@ -314,6 +428,22 @@ def lavora_duckdb(parquet, thread):
     for sql in DOMANDE_SQL.values():
         con.execute(sql.format(t="da_parquet")).fetchall()
     picco, finale = _picco_rss(), _rss()
+    return {"rss_iniziale_mb": rss_iniziale / MB, "picco_rss_mb": picco / MB,
+            "incremento_picco_mb": max(picco - rss_iniziale, 0) / MB,
+            "incremento_finale_mb": max(finale - rss_iniziale, 0) / MB}
+
+
+# ---------------------------------------------------------------------------
+# Processo di misura 3: solo SQLite su file, senza dataframe in memoria
+# ---------------------------------------------------------------------------
+
+def lavora_sqlite(file_sqlite):
+    rss_iniziale = _rss()
+    con = sqlite3.connect(file_sqlite)
+    for sql in DOMANDE_SQLITE.values():
+        con.execute(sql.format(t="dati")).fetchall()
+    picco, finale = _picco_rss(), _rss()
+    con.close()
     return {"rss_iniziale_mb": rss_iniziale / MB, "picco_rss_mb": picco / MB,
             "incremento_picco_mb": max(picco - rss_iniziale, 0) / MB,
             "incremento_finale_mb": max(finale - rss_iniziale, 0) / MB}
@@ -338,6 +468,7 @@ def _macchina_e_versioni():
         "core": os.cpu_count(), "memoria_totale_gb": round(psutil.virtual_memory().total / 1e9, 1),
         "python": platform.python_version(), "pandas": pd.__version__,
         "numpy": np.__version__, "duckdb": duckdb.__version__,
+        "sqlite": sqlite3.sqlite_version,
     }
 
 
@@ -364,13 +495,18 @@ def coordina(args):
         if args.rigenera or not csv.exists():
             print(f"[{n}x] genero {csv} ...", flush=True)
             genera(n, cartella)
-        print(f"[{n}x] misure con pandas e DuckDB ...", flush=True)
+        print(f"[{n}x] misure con pandas, DuckDB e SQLite ...", flush=True)
         comuni = ["--csv", str(csv), "--n", str(n), "--ripetizioni", str(args.ripetizioni),
                   "--thread", str(args.thread), "--cartella", str(cartella)]
         risultato = _lancia("pandas", comuni)
         print(f"[{n}x] memoria di DuckDB da solo ...", flush=True)
         risultato["duckdb_da_solo"] = _lancia(
             "duckdb", ["--parquet", risultato["parquet"], "--thread", str(args.thread)])
+        print(f"[{n}x] memoria di SQLite da solo ...", flush=True)
+        risultato["sqlite_da_solo"] = _lancia(
+            "sqlite", ["--file-sqlite", risultato["sqlite_file"]])
+        # il file serve solo alla misura: si cancella e non se ne conserva il percorso
+        Path(risultato.pop("sqlite_file")).unlink(missing_ok=True)
         # il parquet serve solo alla misura: si cancella e non se ne conserva il percorso
         Path(risultato.pop("parquet")).unlink(missing_ok=True)
         corsa["dimensioni"][str(n)] = risultato
@@ -401,11 +537,12 @@ if __name__ == "__main__":
     parser.add_argument("--cartella", default=str(CARTELLA_PREDEFINITA))
     parser.add_argument("--rigenera", action="store_true", help="rigenera i dataset")
     # uso interno: i processi di misura
-    parser.add_argument("--processo", choices=["pandas", "duckdb"])
+    parser.add_argument("--processo", choices=["pandas", "duckdb", "sqlite"])
     parser.add_argument("--uscita-processo")
     parser.add_argument("--csv")
     parser.add_argument("--n", type=int)
     parser.add_argument("--parquet")
+    parser.add_argument("--file-sqlite")
     args = parser.parse_args()
 
     if args.processo == "pandas":
@@ -413,6 +550,9 @@ if __name__ == "__main__":
         Path(args.uscita_processo).write_text(json.dumps(r))
     elif args.processo == "duckdb":
         r = lavora_duckdb(args.parquet, args.thread)
+        Path(args.uscita_processo).write_text(json.dumps(r))
+    elif args.processo == "sqlite":
+        r = lavora_sqlite(args.file_sqlite)
         Path(args.uscita_processo).write_text(json.dumps(r))
     else:
         coordina(args)
