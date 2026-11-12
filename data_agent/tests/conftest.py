@@ -18,6 +18,15 @@ def cartella_grafici(tmp_path, monkeypatch):
     return tmp_path
 
 
+@pytest.fixture(autouse=True)
+def cartella_rapporti(tmp_path, monkeypatch):
+    """I rapporti di qualità dei test finiscono in una cartella temporanea, non in
+    data_agent/quality_reports/."""
+    cartella = tmp_path / "quality_reports"
+    monkeypatch.setenv("QUALITY_REPORTS_DIR", str(cartella))
+    return cartella
+
+
 @pytest.fixture(scope="session")
 def grezzo_reale():
     """Il CSV reale così com'è, letto una volta sola. I test non devono modificarlo."""

@@ -1,0 +1,336 @@
+{
+  "versione_formato": 1,
+  "generato_il": "2026-11-12T10:53:15+00:00",
+  "pandas": "3.0.6",
+  "csv": {
+    "file": "scouting_data.csv",
+    "sha256": "a2079f301faaaa3d2b053b77c349a1a1ca8c193ede2d55f1d42448369b850d38",
+    "byte": 239138
+  },
+  "mancanti_grezzo_pct": {
+    "weight_kg": 1.9,
+    "xg": 4.88,
+    "xa": 4.97,
+    "pass_accuracy_pct": 2.81,
+    "sprint_speed_kmh": 3.81,
+    "injury_days_last_season": 6.13
+  },
+  "pulito": {
+    "righe": 1185,
+    "giocatori": 130,
+    "stagioni": {
+      "2023/24": {
+        "righe": 380,
+        "giocatori": 130
+      },
+      "2024/25": {
+        "righe": 400,
+        "giocatori": 130
+      },
+      "2025/26": {
+        "righe": 405,
+        "giocatori": 130
+      }
+    },
+    "contratti_scaduti_all_osservazione": {
+      "righe": 0,
+      "player_id": []
+    },
+    "colonne": {
+      "player_id": {
+        "tipo": "int64",
+        "mancanti": 0,
+        "distinti": 130,
+        "minimo": 1,
+        "massimo": 130,
+        "mediana": 66.0
+      },
+      "player_name": {
+        "tipo": "str",
+        "mancanti": 0,
+        "distinti": 130
+      },
+      "club": {
+        "tipo": "str",
+        "mancanti": 0,
+        "distinti": 25
+      },
+      "nationality": {
+        "tipo": "str",
+        "mancanti": 0,
+        "distinti": 24,
+        "valori": [
+          "Argentina",
+          "Austria",
+          "Belgium",
+          "Brazil",
+          "Colombia",
+          "Croatia",
+          "Denmark",
+          "England",
+          "France",
+          "Germany",
+          "Ghana",
+          "Italy",
+          "Ivory Coast",
+          "Japan",
+          "Morocco",
+          "Netherlands",
+          "Nigeria",
+          "Norway",
+          "Poland",
+          "Senegal",
+          "Serbia",
+          "Spain",
+          "Turkey",
+          "Uruguay"
+        ]
+      },
+      "date_of_birth": {
+        "tipo": "str",
+        "mancanti": 0,
+        "distinti": 130
+      },
+      "position": {
+        "tipo": "str",
+        "mancanti": 0,
+        "distinti": 12
+      },
+      "preferred_foot": {
+        "tipo": "str",
+        "mancanti": 0,
+        "distinti": 3
+      },
+      "height_cm": {
+        "tipo": "int64",
+        "mancanti": 0,
+        "distinti": 33,
+        "minimo": 163,
+        "massimo": 198,
+        "mediana": 181.0
+      },
+      "weight_kg": {
+        "tipo": "float64",
+        "mancanti": 0,
+        "distinti": 101,
+        "minimo": 64.1,
+        "massimo": 99.1,
+        "mediana": 77.1
+      },
+      "season": {
+        "tipo": "str",
+        "mancanti": 0,
+        "distinti": 3
+      },
+      "matches_played": {
+        "tipo": "int64",
+        "mancanti": 0,
+        "distinti": 34,
+        "minimo": 1,
+        "massimo": 38,
+        "mediana": 25.0
+      },
+      "minutes_played": {
+        "tipo": "int64",
+        "mancanti": 0,
+        "distinti": 348,
+        "minimo": 56,
+        "massimo": 3534,
+        "mediana": 1727.0
+      },
+      "goals": {
+        "tipo": "int64",
+        "mancanti": 0,
+        "distinti": 8,
+        "minimo": 0,
+        "massimo": 7,
+        "mediana": 0.0
+      },
+      "assists": {
+        "tipo": "int64",
+        "mancanti": 0,
+        "distinti": 6,
+        "minimo": 0,
+        "massimo": 5,
+        "mediana": 0.0
+      },
+      "xg": {
+        "tipo": "float64",
+        "mancanti": 0,
+        "distinti": 183,
+        "minimo": 0.0,
+        "massimo": 8.11,
+        "mediana": 0.61
+      },
+      "xa": {
+        "tipo": "float64",
+        "mancanti": 0,
+        "distinti": 188,
+        "minimo": 0.0,
+        "massimo": 5.38,
+        "mediana": 0.78
+      },
+      "pass_accuracy_pct": {
+        "tipo": "float64",
+        "mancanti": 0,
+        "distinti": 221,
+        "minimo": 55.7,
+        "massimo": 99.0,
+        "mediana": 81.1
+      },
+      "duels_won_pct": {
+        "tipo": "float64",
+        "mancanti": 0,
+        "distinti": 252,
+        "minimo": 14.8,
+        "massimo": 83.5,
+        "mediana": 51.6
+      },
+      "aerial_duels_won_pct": {
+        "tipo": "float64",
+        "mancanti": 0,
+        "distinti": 271,
+        "minimo": 6.6,
+        "massimo": 83.2,
+        "mediana": 45.5
+      },
+      "tackles_won": {
+        "tipo": "int64",
+        "mancanti": 0,
+        "distinti": 35,
+        "minimo": 0,
+        "massimo": 34,
+        "mediana": 9.0
+      },
+      "key_passes": {
+        "tipo": "int64",
+        "mancanti": 0,
+        "distinti": 28,
+        "minimo": 0,
+        "massimo": 30,
+        "mediana": 6.0
+      },
+      "dribbles_completed": {
+        "tipo": "int64",
+        "mancanti": 0,
+        "distinti": 30,
+        "minimo": 0,
+        "massimo": 40,
+        "mediana": 6.0
+      },
+      "yellow_cards": {
+        "tipo": "int64",
+        "mancanti": 0,
+        "distinti": 13,
+        "minimo": 0,
+        "massimo": 12,
+        "mediana": 4.0
+      },
+      "red_cards": {
+        "tipo": "int64",
+        "mancanti": 0,
+        "distinti": 2,
+        "minimo": 0,
+        "massimo": 1,
+        "mediana": 0.0
+      },
+      "distance_covered_km": {
+        "tipo": "float64",
+        "mancanti": 0,
+        "distinti": 230,
+        "minimo": 7.57,
+        "massimo": 12.98,
+        "mediana": 10.48
+      },
+      "sprint_speed_kmh": {
+        "tipo": "float64",
+        "mancanti": 0,
+        "distinti": 300,
+        "minimo": 24.18,
+        "massimo": 37.5,
+        "mediana": 30.97
+      },
+      "saves": {
+        "tipo": "float64",
+        "mancanti": 1054,
+        "distinti": 34,
+        "minimo": 19.0,
+        "massimo": 151.0,
+        "mediana": 58.0
+      },
+      "save_pct": {
+        "tipo": "float64",
+        "mancanti": 1054,
+        "distinti": 40,
+        "minimo": 55.6,
+        "massimo": 84.7,
+        "mediana": 70.3
+      },
+      "clean_sheets": {
+        "tipo": "float64",
+        "mancanti": 1054,
+        "distinti": 10,
+        "minimo": 1.0,
+        "massimo": 11.0,
+        "mediana": 6.0
+      },
+      "market_value_eur": {
+        "tipo": "float64",
+        "mancanti": 0,
+        "distinti": 380,
+        "minimo": 1618000.0,
+        "massimo": 19102000.0,
+        "mediana": 6959000.0
+      },
+      "contract_expiry": {
+        "tipo": "datetime64[us]",
+        "mancanti": 0,
+        "distinti": 12,
+        "minimo": "2024-06-30",
+        "massimo": "2029-12-30",
+        "mediana": "2027-06-30"
+      },
+      "scout_rating": {
+        "tipo": "int64",
+        "mancanti": 0,
+        "distinti": 68,
+        "minimo": 25,
+        "massimo": 99,
+        "mediana": 66.0
+      },
+      "injury_days_last_season": {
+        "tipo": "float64",
+        "mancanti": 0,
+        "distinti": 56,
+        "minimo": 0.0,
+        "massimo": 88.0,
+        "mediana": 8.0
+      },
+      "observation_date": {
+        "tipo": "datetime64[us]",
+        "mancanti": 0,
+        "distinti": 635,
+        "minimo": "2023-08-16",
+        "massimo": "2026-05-20",
+        "mediana": "2025-01-14"
+      },
+      "scout_name": {
+        "tipo": "str",
+        "mancanti": 0,
+        "distinti": 10,
+        "valori": [
+          "Antonio Greco",
+          "Chiara Fontana",
+          "Davide Russo",
+          "Elena Conti",
+          "Giulia Ricci",
+          "Luca Bianchi",
+          "Marco Ferrari",
+          "Paolo Marini",
+          "Sara Moretti",
+          "Valeria Costa"
+        ]
+      }
+    }
+  }
+}

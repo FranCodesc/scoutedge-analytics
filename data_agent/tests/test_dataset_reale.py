@@ -1,5 +1,8 @@
 """Test sul CSV reale (data/scouting_data.csv): i numeri sono quelli di docs/TEST.md."""
 
+from pathlib import Path
+
+import qualita
 import schema
 
 
@@ -40,3 +43,19 @@ def test_il_csv_reale_rispetta_lo_schema(grezzo_reale, pulito_reale):
     assert schema.verifica_colonne_grezze(grezzo_reale) == []
     df, _ = pulito_reale
     schema.verifica_dati_puliti(df)  # nessuna eccezione = nessuna violazione
+
+
+def test_profilo_di_riferimento_coerente_con_il_csv_reale(grezzo_reale, pulito_reale):
+    riferimento = qualita.carica_riferimento()
+    csv = Path(__file__).resolve().parents[2] / "data" / "scouting_data.csv"
+    assert riferimento["csv"] == qualita.impronta_file(csv)
+    df, _ = pulito_reale
+    assert qualita.confronta(qualita.profilo(grezzo_reale, valori_aperti=False),
+                             qualita.profilo(df), riferimento, grezzo_reale, df) == []
+
+
+def test_valori_osservati_dentro_i_limiti(pulito_reale):
+    df, _ = pulito_reale
+    margini = [(v["regola"], m) for v in qualita.limiti_osservati(df)
+               for m in (v["margine_min"], v["margine_max"]) if m is not None]
+    assert [(regola, m) for regola, m in margini if m < 0] == []

@@ -171,7 +171,10 @@ def clean_scouting_data(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     # e servono sia per contare sia per modificare esattamente quelle righe.
     mask_pass = df['pass_accuracy_pct'] > 100    # percentuale oltre 100: valore registrato doppio
     mask_sprint = df['sprint_speed_kmh'] < 0     # velocità negativa: errore di segno
-    mask_height = df['height_cm'] > 210          # altezza con uno zero in più (es. 1820 -> 182)
+    # altezza con uno zero in più (es. 1820 -> 182): in centimetri un'altezza ha al massimo
+    # 3 cifre, quindi si corregge solo con 4 cifre o più. Una soglia più bassa (es. > 210)
+    # dividerebbe anche un giocatore vero di 211 cm. Il limite dello schema è 150-220 cm.
+    mask_height = df['height_cm'] >= 1000
     report['correzioni_range'] = {
         'pass_accuracy_pct_dimezzati': int(mask_pass.sum()),
         'sprint_speed_kmh_resi_positivi': int(mask_sprint.sum()),

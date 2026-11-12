@@ -23,3 +23,6 @@ data_agent/charts/*.png
 
 # Impostazioni personali dell'editor
 .vscode/
+
+# Rapporti di qualità dei dati, scritti a ogni avvio del data agent
+data_agent/quality_reports/

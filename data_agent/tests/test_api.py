@@ -165,3 +165,48 @@ def test_avvio_fermato_da_dati_fuori_schema(grezzo_reale, tmp_path, monkeypatch)
     with pytest.raises(schema.SchemaError, match="scout_rating: maggiore di 99"):
         with TestClient(main.app):
             pass
+
+
+# --- rapporto di qualità all'avvio ---
+
+
+def test_avvio_scrive_il_rapporto_di_qualita(cartella_grafici, cartella_rapporti, monkeypatch,
+                                             capsys):
+    monkeypatch.setattr(main, "ChatOpenAI", MagicMock())
+    with TestClient(main.app):
+        pass
+    log = capsys.readouterr().out
+    assert "Qualità dei dati — confronto con il riferimento (stesso CSV): 0 avvisi" in log
+    assert len(list(cartella_rapporti.glob("qualita_*.json"))) == 1
+
+
+def test_avvio_con_avvisi_parte_lo_stesso(grezzo_reale, cartella_grafici, tmp_path,
+                                          monkeypatch, capsys):
+    base = _scrivi_csv(tmp_path, grezzo_reale.iloc[100:])   # meno righe del riferimento
+    monkeypatch.setattr(main, "BASE_DIR", base)
+    monkeypatch.setattr(main, "ChatOpenAI", MagicMock())
+    with TestClient(main.app) as client:
+        assert client.get("/").json() == {"status": "ok"}
+        assert len(main.state["df"]) < 1185
+    log = capsys.readouterr().out
+    assert "(CSV diverso dal riferimento)" in log
+    assert "avviso: righe:" in log
+
+
+def test_avvio_con_la_cartella_dei_rapporti_non_scrivibile(cartella_grafici, tmp_path,
+                                                           monkeypatch, capsys):
+    file = tmp_path / "un_file"
+    file.write_text("")
+    monkeypatch.setenv("QUALITY_REPORTS_DIR", str(file / "rapporti"))
+    monkeypatch.setattr(main, "ChatOpenAI", MagicMock())
+    with TestClient(main.app) as client:
+        assert client.get("/").json() == {"status": "ok"}
+    assert "Attenzione: rapporto di qualità non scritto" in capsys.readouterr().out
+
+
+def test_un_errore_del_rapporto_non_blocca_l_avvio(cartella_grafici, monkeypatch, capsys):
+    monkeypatch.setattr(main, "genera_e_registra", MagicMock(side_effect=KeyError("x")))
+    monkeypatch.setattr(main, "ChatOpenAI", MagicMock())
+    with TestClient(main.app) as client:
+        assert client.get("/").json() == {"status": "ok"}
+    assert "Attenzione: rapporto di qualità non generato (KeyError" in capsys.readouterr().out

@@ -196,3 +196,11 @@ def test_il_dataframe_grezzo_non_viene_modificato(grezzo):
 def test_club_sconosciuto_ferma_la_pulizia():
     with pytest.raises(ValueError, match="Club sconosciuto"):
         clean_scouting_data(pd.DataFrame([_riga(club="Club Inventato")]))
+
+
+@pytest.mark.parametrize("grezza, pulita", [(1820, 182), (2050, 205), (211, 211), (215, 215)])
+def test_altezza_divisa_per_10_solo_con_4_cifre(grezza, pulita):
+    # Un'altezza in centimetri ha al massimo 3 cifre: 4 cifre vogliono dire uno zero in più.
+    df, report = clean_scouting_data(pd.DataFrame([_riga(height_cm=grezza)]))
+    assert df["height_cm"].iloc[0] == pulita
+    assert report["correzioni_range"]["height_cm_divisi_per_10"] == (1 if grezza >= 1000 else 0)

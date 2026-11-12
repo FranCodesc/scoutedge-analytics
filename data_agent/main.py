@@ -30,6 +30,7 @@ from langchain_openai import ChatOpenAI
 
 from cleaning import clean_scouting_data, format_cleaning_report
 from schema import verifica_colonne_grezze, verifica_dati_puliti
+from qualita import cartella_rapporti, genera_e_registra
 from agent import build_data_agent, CHARTS_DIR, pulisci_grafici
 
 load_dotenv()
@@ -49,14 +50,26 @@ async def lifespan(app: FastAPI):
     Carica il CSV, verifica le colonne attese, lo pulisce con clean_scouting_data e controlla
     il risultato con lo schema (schema.py): se qualcosa non torna il servizio non parte e
     l'errore elenca tutte le violazioni (meglio un avvio fallito che dati sbagliati).
+    Poi scrive il rapporto di qualità (qualita.py): riepilogo nel log e JSON nella cartella
+    dei rapporti. Il rapporto non blocca mai l'avvio.
     Conserva in `state` dataframe pulito, modello e riepilogo delle correzioni.
     """
-    df_raw = pd.read_csv(BASE_DIR / ".." / "data" / "scouting_data.csv")
+    percorso_csv = BASE_DIR / ".." / "data" / "scouting_data.csv"
+    df_raw = pd.read_csv(percorso_csv)
     colonne_in_piu = verifica_colonne_grezze(df_raw)
     if colonne_in_piu:
         print(f"Attenzione: colonne non previste nel CSV: {', '.join(colonne_in_piu)}")
     df_clean, cleaning_report = clean_scouting_data(df_raw)
     verifica_dati_puliti(df_clean)
+
+    # Osservabilità dei dati: un errore del rapporto non deve mai fermare il servizio,
+    # perché i dati hanno già passato lo schema.
+    try:
+        genera_e_registra(percorso_csv, df_raw, df_clean, cleaning_report,
+                          cartella_rapporti(BASE_DIR))
+    except Exception as e:
+        print(f"Attenzione: rapporto di qualità non generato ({type(e).__name__}: {e}); "
+              "il servizio parte lo stesso")
 
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 

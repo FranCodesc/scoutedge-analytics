@@ -6,8 +6,11 @@ Due controlli, entrambi eseguiti all'avvio del data agent:
   tra colonne. Se qualcosa non torna, l'errore elenca TUTTE le violazioni.
 I limiti numerici sono di plausibilità: abbastanza larghi da non fermare dati veri,
 abbastanza stretti da prendere gli errori che la pulizia corregge (percentuali oltre 100,
-altezze con uno zero in più, velocità negative).
+altezze con uno zero in più, velocità negative). Ogni limite dichiara il motivo e la fonte;
+i valori osservati e il margine sui dati reali compaiono nel rapporto di qualità (qualita.py).
 """
+
+from typing import NamedTuple
 
 import pandas as pd
 
@@ -42,21 +45,72 @@ TIPI = {
     "scout_name": "testo",
 }
 
-# Intervalli ammessi (minimo, massimo), estremi inclusi; None = nessun limite da quel lato.
+
+class Limite(NamedTuple):
+    """Un limite di plausibilità: estremi inclusi (None = nessun limite da quel lato), il
+    motivo e la fonte. La fonte inizia con una delle voci di FONTI; più fonti si separano
+    con ";"."""
+    minimo: object
+    massimo: object
+    motivo: str
+    fonte: str
+
+
+# Da dove viene un limite. "ordine di grandezza" = valore reale non verificato con una
+# fonte citabile: lo si dichiara come tale invece di dare un numero preciso.
+FONTI = ("definizione", "regola del gioco", "ordine di grandezza", "pulizia")
+
+_CONTEGGIO = Limite(0, None, "conteggio non negativo; nessun massimo, perché nessuna fonte "
+                    "dà un tetto: i valori alti li segnala il rapporto di qualità",
+                    "definizione (manuale §4)")
+_SOMMA_DI_PROBABILITA = Limite(0, None, "somma di probabilità, quindi non negativa; nessun "
+                               "massimo: i valori alti li segnala il rapporto di qualità",
+                               "definizione (manuale §3.2, §4)")
+_PERCENTUALE = Limite(0, 100, "percentuale", "definizione (manuale §4)")
+
+# Intervalli ammessi per colonna.
 INTERVALLI = {
-    "player_id": (1, None),
-    "scout_rating": (1, 99),                       # manuale, sezione 3.1
-    "pass_accuracy_pct": (0, 100), "duels_won_pct": (0, 100),
-    "aerial_duels_won_pct": (0, 100), "save_pct": (0, 100),   # manuale, sezione 6
-    "height_cm": (150, 210), "weight_kg": (50, 120),
-    "sprint_speed_kmh": (20, 40), "distance_covered_km": (5, 15),
-    "market_value_eur": (1, 200_000_000),
-    "matches_played": (0, 60), "minutes_played": (0, None),
-    "goals": (0, None), "assists": (0, None), "xg": (0, None), "xa": (0, None),
-    "tackles_won": (0, None), "key_passes": (0, None), "dribbles_completed": (0, None),
-    "yellow_cards": (0, 30), "red_cards": (0, 5),
-    "saves": (0, None), "clean_sheets": (0, None),
-    "injury_days_last_season": (0, 365),
+    "player_id": Limite(1, None, "identificatore intero positivo",
+                        "definizione (chiave del dataset)"),
+    "scout_rating": Limite(1, 99, "scala del rating", "definizione (manuale §3.1, §4)"),
+    "pass_accuracy_pct": Limite(
+        0, 100, "percentuale; i valori sopra 100 li dimezza la pulizia: se restano sopra "
+        "100 è un errore diverso", "definizione (manuale §4, §6 punto 6); pulizia"),
+    "duels_won_pct": _PERCENTUALE,
+    "aerial_duels_won_pct": _PERCENTUALE,
+    "save_pct": Limite(0, 100, "percentuale, solo per i portieri", "definizione (manuale §4)"),
+    "height_cm": Limite(
+        150, 220, "i calciatori professionisti più bassi stanno intorno a 1,55-1,60 m, i più "
+        "alti poco oltre i 2 m; la pulizia divide per 10 solo le altezze di 4 cifre, quindi "
+        "un giocatore vero sopra 210 cm passa", "ordine di grandezza; pulizia"),
+    "weight_kg": Limite(50, 120, "i calciatori professionisti pesano tra circa 55 kg e poco "
+                        "oltre 100 kg", "ordine di grandezza"),
+    "sprint_speed_kmh": Limite(
+        20, 40, "le velocità di punta nel calcio stanno intorno a 36-38 km/h; i valori "
+        "negativi li rende positivi la pulizia: sotto 20 è un errore diverso",
+        "ordine di grandezza; pulizia"),
+    "distance_covered_km": Limite(
+        5, 15, "media per partita: giocatori di movimento intorno a 10-13 km, portieri molto "
+        "meno", "definizione (manuale §4); ordine di grandezza"),
+    "market_value_eur": Limite(
+        1, 200_000_000, "stima interna sempre positiva (zero sarebbe un valore mancante); "
+        "massimo all'ordine di grandezza delle valutazioni più alte del mercato",
+        "definizione (manuale §8); ordine di grandezza"),
+    "matches_played": Limite(
+        0, 80, "38 partite sono un campionato a 20 squadre; con coppe e nazionale i più "
+        "impiegati arrivano intorno a 60-70", "ordine di grandezza"),
+    "minutes_played": Limite(0, None, "conteggio non negativo; il tetto viene dalla relazione "
+                             "con le partite (MASSIMI_PER_PARTITA)", "definizione (manuale §4)"),
+    "goals": _CONTEGGIO, "assists": _CONTEGGIO,
+    "xg": _SOMMA_DI_PROBABILITA, "xa": _SOMMA_DI_PROBABILITA,
+    "tackles_won": _CONTEGGIO, "key_passes": _CONTEGGIO, "dribbles_completed": _CONTEGGIO,
+    "yellow_cards": Limite(0, 30, "i più ammoniti di una stagione restano sotto i 20; il tetto "
+                           "per partita è in MASSIMI_PER_PARTITA", "ordine di grandezza"),
+    "red_cards": Limite(0, 5, "un rosso porta squalifiche di più giornate: più di qualche "
+                        "rosso in una stagione è eccezionale", "ordine di grandezza"),
+    "saves": _CONTEGGIO, "clean_sheets": _CONTEGGIO,
+    "injury_days_last_season": Limite(0, 365, "giorni di indisponibilità in una stagione",
+                                      "definizione (manuale §4)"),
 }
 
 # Valori ammessi per le colonne a elenco chiuso.
@@ -74,8 +128,41 @@ COLONNE_SOLO_PORTIERI = ["saves", "save_pct", "clean_sheets"]
 # Attributi che non cambiano per lo stesso player_id (il club sì: i giocatori cambiano squadra).
 ATTRIBUTI_FISSI = ["player_name", "nationality", "date_of_birth", "position", "preferred_foot"]
 
-# 90 minuti più eventuali supplementari: oltre questo, minuti e partite non tornano.
-MINUTI_MASSIMI_PER_PARTITA = 120
+# Relazioni con le partite giocate: valore della colonna <= massimo × matches_played.
+# I conteggi sono di stagione, quindi il controllo vale sulla media per partita.
+MASSIMI_PER_PARTITA = {
+    "minutes_played": Limite(None, 120, "90 minuti più 30 di supplementari; è una media "
+                             "sulla stagione, il recupero delle singole partite non ci arriva",
+                             "regola del gioco"),
+    "yellow_cards": Limite(None, 2, "il secondo giallo nella stessa partita è un'espulsione",
+                           "regola del gioco"),
+    "red_cards": Limite(None, 1, "dopo un rosso il giocatore lascia la partita",
+                        "regola del gioco"),
+    "clean_sheets": Limite(None, 1, "una porta inviolata è una partita giocata",
+                           "regola del gioco"),
+}
+
+# Età all'osservazione (anni, da date_of_birth a observation_date).
+ETA_ALL_OSSERVAZIONE = Limite(15, 45, "i professionisti esordiscono intorno ai 16-17 anni "
+                              "e raramente giocano oltre i 40", "ordine di grandezza")
+
+# Finestra di una stagione AAAA/AA: (mese, giorno) di inizio nell'anno iniziale e di fine
+# nell'anno dopo.
+FINESTRA_STAGIONE = Limite((7, 1), (6, 30), "anno sportivo dei contratti, che scadono al 30 "
+                           "giugno: un'osservazione di luglio (per esempio nei turni "
+                           "preliminari) è già nella stagione nuova", "ordine di grandezza")
+
+# Un contratto già scaduto alla data di osservazione NON è una violazione: per il manuale
+# (sezione 8, FAQ) indica un giocatore svincolato o in scadenza, un segnale utile e non un
+# dato sporco. Lo conta il rapporto di qualità.
+
+# Tutti i limiti con un nome leggibile: li usano i test e il rapporto di qualità.
+LIMITI = {
+    **INTERVALLI,
+    **{f"{col} per partita": lim for col, lim in MASSIMI_PER_PARTITA.items()},
+    "età all'osservazione": ETA_ALL_OSSERVAZIONE,
+    "finestra della stagione": FINESTRA_STAGIONE,
+}
 
 
 class SchemaError(ValueError):
@@ -105,9 +192,19 @@ def _segnala(violazioni, df, maschera, colonna, regola):
 
 
 def _finestra_stagione(stagione):
-    """Dal 1° agosto dell'anno iniziale al 30 giugno dell'anno dopo (es. 2024/25)."""
+    """Inizio e fine della stagione secondo FINESTRA_STAGIONE (es. 2024/25: dal 1° luglio
+    2024 al 30 giugno 2025)."""
     anno = int(stagione[:4])
-    return pd.Timestamp(anno, 8, 1), pd.Timestamp(anno + 1, 6, 30)
+    (mese_inizio, giorno_inizio), (mese_fine, giorno_fine) = FINESTRA_STAGIONE[:2]
+    return (pd.Timestamp(anno, mese_inizio, giorno_inizio),
+            pd.Timestamp(anno + 1, mese_fine, giorno_fine))
+
+
+def eta_all_osservazione(df):
+    """Età in anni alla data di osservazione. Una data di nascita non valida dà NaN (la
+    segnala un altro controllo)."""
+    nascita = pd.to_datetime(df["date_of_birth"], format="%Y-%m-%d", errors="coerce")
+    return (df["observation_date"] - nascita).dt.days / 365.25
 
 
 _CONTROLLI_TIPO = {
@@ -147,13 +244,14 @@ def verifica_dati_puliti(df):
             _segnala(violazioni, df, df[col].isna(), col, "valori mancanti non ammessi")
 
     # Intervalli numerici. I mancanti non sono violazioni di intervallo: sono già segnalati sopra.
-    for col, (minimo, massimo) in INTERVALLI.items():
+    for col, limite in INTERVALLI.items():
         if col not in tipo_ok:
             continue
-        if minimo is not None:
-            _segnala(violazioni, df, df[col] < minimo, col, f"minore di {minimo}")
-        if massimo is not None:
-            _segnala(violazioni, df, df[col] > massimo, col, f"maggiore di {massimo}")
+        if limite.minimo is not None:
+            _segnala(violazioni, df, df[col] < limite.minimo, col, f"minore di {limite.minimo}")
+        if limite.massimo is not None:
+            _segnala(violazioni, df, df[col] > limite.massimo, col,
+                     f"maggiore di {limite.massimo}")
 
     # Domini a elenco chiuso.
     for col, ammessi in DOMINI.items():
@@ -168,11 +266,10 @@ def verifica_dati_puliti(df):
              "riga identica a un'altra")
 
     # Relazioni tra colonne.
-    if {"minutes_played", "matches_played"} <= tipo_ok:
-        _segnala(violazioni, df,
-                 df["minutes_played"] > df["matches_played"] * MINUTI_MASSIMI_PER_PARTITA,
-                 "minutes_played",
-                 f"più di {MINUTI_MASSIMI_PER_PARTITA} minuti per partita")
+    for col, limite in MASSIMI_PER_PARTITA.items():
+        if {col, "matches_played"} <= tipo_ok:
+            _segnala(violazioni, df, df[col] > df["matches_played"] * limite.massimo, col,
+                     f"più di {limite.massimo} per partita giocata")
     if "observation_date" in tipo_ok:
         for stagione in DOMINI["season"]:
             inizio, fine = _finestra_stagione(stagione)
@@ -180,9 +277,13 @@ def verifica_dati_puliti(df):
                 (df["observation_date"] < inizio) | (df["observation_date"] > fine))
             _segnala(violazioni, df, fuori, "observation_date",
                      f"fuori dalla stagione {stagione} ({inizio.date()} .. {fine.date()})")
-    if {"contract_expiry", "observation_date"} <= tipo_ok:
-        _segnala(violazioni, df, df["contract_expiry"] < df["observation_date"],
-                 "contract_expiry", "precedente alla data di osservazione")
+    if {"date_of_birth", "observation_date"} <= tipo_ok:
+        eta = eta_all_osservazione(df)
+        _segnala(violazioni, df,
+                 (eta < ETA_ALL_OSSERVAZIONE.minimo) | (eta > ETA_ALL_OSSERVAZIONE.massimo),
+                 "date_of_birth",
+                 f"età all'osservazione fuori da {ETA_ALL_OSSERVAZIONE.minimo}-"
+                 f"{ETA_ALL_OSSERVAZIONE.massimo} anni")
     for col in ATTRIBUTI_FISSI:
         valori_per_giocatore = df.groupby("player_id")[col].nunique()
         incoerenti = valori_per_giocatore[valori_per_giocatore > 1].index
