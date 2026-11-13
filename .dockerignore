@@ -11,6 +11,7 @@
 front end/dist
 back end/chroma_data
 data_agent/charts/*.png
+data_agent/quality_reports
 
 # Non servono all'esecuzione.
 .git

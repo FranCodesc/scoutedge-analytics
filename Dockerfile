@@ -80,9 +80,12 @@ RUN mkdir -p data_agent/charts && chown user:user data_agent/charts
 # Indirizzi interni fissi: tutti i servizi stanno nello stesso container.
 # OPENAI_API_KEY, FRONTEND_ORIGIN, RATE_LIMIT_* e TRUST_PROXY NON si scrivono qui:
 # si passano all'avvio del container.
+# QUALITY_REPORTS_DIR: l'utente non root scrive solo in /tmp e in data_agent/charts;
+# i rapporti di qualità vanno in /tmp e si perdono a ogni riavvio (resta il riepilogo nel log).
 ENV CHROMA_URL=http://127.0.0.1:8001 \
     DATA_AGENT_URL=http://127.0.0.1:8000 \
-    PORT=3001
+    PORT=3001 \
+    QUALITY_REPORTS_DIR=/tmp/quality_reports
 
 USER user
 EXPOSE 7860
