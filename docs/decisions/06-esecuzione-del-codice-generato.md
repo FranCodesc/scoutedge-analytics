@@ -17,6 +17,7 @@ Il data agent esegue con `exec`/`eval`, nel processo del servizio, il codice pan
 
 - **API a oggetti di matplotlib (`Figure()` senza `pyplot`).** Elimina la figura corrente condivisa, ma non basta: anche `sys.stdout` (sostituito per catturare l'output) e le opzioni di pandas sono globali al processo, e seaborn disegna sugli assi correnti di pyplot. Richiederebbe inoltre di cambiare la docstring dello strumento e il prompt, perché il modello scrive codice con `plt` e `sns`, e quindi di rifare la regressione e la valutazione con il modello reale. Il lock copre tutto lo stato condiviso senza toccare i prompt.
 - **Processi separati.** Isolerebbero tutto lo stato e permetterebbero di interrompere un codice che non termina. Ma le variabili del modello devono restare tra le chiamate della stessa richiesta: un processo per chiamata le perderebbe e ricaricherebbe ogni volta le librerie (la parte lenta dell'avvio, vedi [docs/TEST.md](../TEST.md#simulazione-con-risorse-ridotte)), mentre un processo vivo per richiesta è un cambio di architettura dello strumento, con comunicazione, timeout e grafici da gestire e testare. Il lock risolve il bug con poche righe e senza cambiare ciò che vede il modello. Resta la strada se servisse un timeout sul codice o una sandbox.
+- **`create_pandas_dataframe_agent` di `langchain-experimental`**, al posto di `create_agent` con lo strumento `python_repl`. La libreria è in dismissione (all'importazione avvisa che non è più mantenuta) e la sua API non è pensata per LangChain 1.x, che il progetto usa. Con uno strumento scritto nel progetto esecuzione, output e grafici restano sotto controllo: è ciò che ha permesso il salvataggio dei grafici riservato allo strumento, il lock e il limite di 6000 caratteri sull'output. La prova è nel notebook di prototipazione (`data_agent/prototype.ipynb`, sezione 6), con l'avviso di dismissione.
 
 ## Conseguenze
 
@@ -35,5 +36,6 @@ Il data agent esegue con `exec`/`eval`, nel processo del servizio, il codice pan
 
 - `data_agent/agent.py`: costanti in testa al file, `pulisci_grafici`, `make_python_tool` (`_esegui` e `python_repl`).
 - `data_agent/main.py`: avvio (pulizia iniziale) e `analyze` (agente per richiesta, lettura della nota del grafico).
+- `data_agent/prototype.ipynb`, sezione 6: la prova di `create_pandas_dataframe_agent` con l'avviso di dismissione e la costruzione dell'agente con `python_repl`.
 - `data_agent/tests/test_concorrenza.py` e `data_agent/tests/test_pulizia_grafici.py`.
 - `front end/src/components/ChartDialog.jsx` e `front end/src/components/ChartsPanel.jsx`: testo di riserva.

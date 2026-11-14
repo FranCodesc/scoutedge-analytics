@@ -25,14 +25,14 @@ Fino al 2026-11-02 le verifiche erano script che chiamano il modello reale (`dat
 
 - I test unitari non dicono nulla sul comportamento del modello: è il compito della valutazione, che si lancia a mano dopo ogni modifica a prompt o strumenti.
 - La valutazione copre 13 domande e non gira nella CI.
-- Un caricamento manuale si può dimenticare: prima di ogni invio si controlla che lo Space corrisponda all'ultimo commit.
+- Un caricamento manuale si può dimenticare: prima di ogni invio si controlla che lo Space abbia il codice dell'ultimo commit. Un commit che tocca solo `docs/` o il `README.md` non cambia i file dello Space, che non riceve `docs/` e ha un README suo (`deploy/README_SPACE.md`): in quel caso lo Space può restare al commit precedente.
 
 ## Numeri
 
-- 136 test del data agent, 225 del back end, 76 del front end; nella CI circa un minuto per le tre suite.
+- 177 test del data agent, 225 del back end, 76 del front end; nella CI circa un minuto per le tre suite.
 - La prima corsa completa (N=5, 2026-11-04) ha dato 78 turni su 80 con i valori corretti: in una risposta sui tre difensori centrali compariva solo Pereira, il limite intermittente già noto; dell'altro turno sbagliato non resta traccia. Non è stata salvata nel repo.
 - Le tre corse salvate: 80/80 valori e 80/80 strumenti con N=5 il 4 novembre ([corsa](../../back%20end/eval/risultati/corsa-20261104-1008.md)); 20/20 sulla domanda dei difensori centrali con N=20 il 4 novembre ([corsa](../../back%20end/eval/risultati/corsa-20261104-1030.md)); 79/80 valori e 80/80 strumenti con N=5 il 9 novembre, da un clone pulito ([corsa](../../back%20end/eval/risultati/corsa-20261109-1046.md)), con l'unico errore sulla domanda dei difensori centrali (compare solo Pereira). Su quella domanda le risposte corrette sono 29 su 30 nelle corse salvate, più almeno un errore nella prima corsa completa: l'errore resta un limite dichiarato.
-- La valutazione confronta l'insieme degli strumenti, non il numero di chiamate: nel log del back end le chiamate doppie ad `analyze_data` sono 0 su 80 turni nella corsa del 9 novembre.
+- La valutazione confronta l'insieme degli strumenti, non il numero di chiamate: nel log del back end le chiamate doppie ad `analyze_data` sono 0 su 80 turni nella corsa del 9 novembre. Online, nel secondo turno della conversazione sulla stagione precedente, ce n'è stata una l'8 novembre e nessuna il 13 novembre (una prova per data).
 
 ## Dove nel codice
 

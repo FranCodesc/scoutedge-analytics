@@ -34,13 +34,15 @@ Per questo il sistema è pensato per un uso dimostrativo. La demo online lo espo
 - **Stagioni scritte in due punti.** Le tre stagioni del dataset sono scritte nel prompt dell'orchestratore, per risolvere riferimenti come "la stagione precedente", e in `data_agent/schema.py`: se il dataset cambia, vanno aggiornate in entrambi.
 - **Dipendenze di sviluppo del front end.** `npm audit` può segnalare vulnerabilità in pacchetti usati solo in sviluppo e in fase di build: non fanno parte del codice che arriva al browser. Lo si verifica da `front end/` con `npm audit --omit=dev`, che non segnala nessuna vulnerabilità nelle dipendenze che arrivano al browser.
 - **Un codice generato che non termina tiene il lock.** Le altre analisi ricevono "servizio occupato" dopo 30 secondi, e nessun timeout interrompe quel codice ([decisions/06](decisions/06-esecuzione-del-codice-generato.md)).
-- **Limiti di plausibilità dello schema scelti a mano.** Sono larghi: fermano gli errori che la pulizia corregge, non un dato vero ma insolito ([decisions/05](decisions/05-pulizia-e-schema-dei-dati.md)).
+- **Limiti dello schema con un ordine di grandezza.** Ogni limite dichiara motivo e fonte, ma dieci regole (per esempio altezza, peso, partite giocate ed età all'osservazione) poggiano su un ordine di grandezza non verificato con una fonte citabile, ed è dichiarato come tale. I margini sui dati reali sono nel rapporto di qualità ([decisions/05](decisions/05-pulizia-e-schema-dei-dati.md)).
+- **Avvisi del rapporto di qualità.** Sono informativi e non bloccano l'avvio; qualche avviso su dati buoni è atteso (fino a 4 nella calibrazione). Nel container i rapporti stanno in `/tmp` e si perdono a ogni riavvio; resta il riepilogo nei log.
 - **Valutazione automatica fuori dall'integrazione continua.** Copre 13 domande e si lancia a mano, perché costa token. Confronta l'insieme degli strumenti usati e non conta le chiamate doppie allo stesso strumento ([`docs/TEST.md`](TEST.md#valutazione-automatica), [decisions/07](decisions/07-test-e-valutazione.md)).
 - **Benchmark su una sola macchina**, più veloce della CPU dello Space ([decisions/09](decisions/09-pandas-e-non-duckdb.md)).
 
 ## Limiti risolti
 
 - **Stato globale di matplotlib tra richieste concorrenti.** Con due analisi in parallelo, una poteva lasciare disattivato il salvataggio dei grafici per tutto il processo, e da quel momento i grafici sparivano fino al riavvio del data agent. Un lock attorno all'esecuzione del codice generato serializza le esecuzioni: un test di concorrenza falliva in 17 giri su 20 sul codice precedente e passa in 20 su 20 con il lock ([decisions/06](decisions/06-esecuzione-del-codice-generato.md)).
+- **Limiti dello schema senza motivazione, in contrasto con il manuale e con la pulizia.** Lo schema bloccava un contratto già scaduto all'osservazione, che la FAQ della sezione 8 del manuale considera un segnale utile, e ammetteva altezze fino a 210 cm mentre la pulizia divideva per 10 quelle sopra 210: un giocatore vero di 211 cm avrebbe fermato il servizio. Ora ogni limite ha motivo e fonte, il contratto scaduto è un indicatore del rapporto di qualità e la pulizia divide solo le altezze di 4 cifre ([decisions/05](decisions/05-pulizia-e-schema-dei-dati.md)).
 
 ## In produzione servirebbero
 

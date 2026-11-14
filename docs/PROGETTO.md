@@ -94,7 +94,7 @@ Osservazioni di scouting su giocatori di club immaginari: 35 colonne tra anagraf
 
 Il file contiene volutamente dati "sporchi": 23 righe duplicate, club e nazionalità scritti in modi diversi (maiuscole, spazi), date e valori di mercato in formati misti, nomi di giocatori giapponesi in kanji, titoli e qualifiche nei nomi di alcuni giocatori (per esempio "Dr.", "Herr", "MBA"), che la pulizia toglie. Ci sono anche coppie di osservazioni dello stesso giocatore nello stesso giorno: non sono duplicati, ma valutazioni distinte, e l'agente le segnala quando incidono su una risposta.
 
-La pulizia è **deterministica**, non affidata all'LLM: `data_agent/cleaning.py` la esegue una sola volta all'avvio del data agent, poi `data_agent/schema.py` controlla le colonne del CSV grezzo e, sul dataframe pulito, tipi, intervalli di plausibilità, domini chiusi, valori mancanti e relazioni tra colonne: se trova violazioni le elenca tutte in un solo errore e il servizio non parte ([decisions/05](decisions/05-pulizia-e-schema-dei-dati.md)). L'agente riceve il riepilogo delle correzioni, quindi sa rispondere anche a "quali correzioni avete applicato ai dati?".
+La pulizia è **deterministica**, non affidata all'LLM: `data_agent/cleaning.py` la esegue una sola volta all'avvio del data agent, poi `data_agent/schema.py` controlla le colonne del CSV grezzo e, sul dataframe pulito, tipi, intervalli di plausibilità (ognuno con il suo motivo e la sua fonte), domini chiusi, valori mancanti e relazioni tra colonne: se trova violazioni le elenca tutte in un solo errore e il servizio non parte. Subito dopo `data_agent/qualita.py` scrive un rapporto di qualità: righe dopo ogni passo della pulizia, valori cambiati per colonna, profilo dei dati, limiti con il margine osservato e confronto con un profilo di riferimento (`data_agent/qualita_riferimento.json`). Gli scostamenti diventano avvisi nel log, che non bloccano l'avvio ([decisions/05](decisions/05-pulizia-e-schema-dei-dati.md), prove in [`docs/TEST.md`](TEST.md#rapporto-di-qualità-dei-dati)). L'agente riceve il riepilogo delle correzioni, quindi sa rispondere anche a "quali correzioni avete applicato ai dati?".
 
 ### Knowledge base: `data/platform_handbook.md`
 
@@ -168,11 +168,14 @@ Le versioni esatte sono in `back end/package.json`, `front end/package.json` e `
 │   ├── main.py                    servizio FastAPI
 │   ├── agent.py                   agente e strumento che esegue il codice Python
 │   ├── cleaning.py                pulizia deterministica del dataset
-│   ├── schema.py                  schema dei dati, controllato all'avvio
+│   ├── schema.py                  schema dei dati con limiti motivati, controllato all'avvio
+│   ├── qualita.py                 rapporto di qualità dei dati, a ogni avvio
+│   ├── qualita_riferimento.json   profilo di riferimento del rapporto (solo statistiche)
 │   ├── prototype.ipynb            notebook di prototipazione
 │   ├── tests/                     test automatici (pytest)
-│   ├── scripts/                   traccia, regressione e benchmark, con i risultati
-│   └── charts/                    grafici PNG generati (creata all'avvio, esclusa da git)
+│   ├── scripts/                   traccia, regressione, benchmark e aggiornamento del riferimento, con i risultati
+│   ├── charts/                    grafici PNG generati (creata all'avvio, esclusa da git)
+│   └── quality_reports/           rapporti di qualità in JSON (creata all'avvio, esclusa da git)
 └── front end/
     ├── .env.example
     ├── README.md                  dettagli dell'interfaccia

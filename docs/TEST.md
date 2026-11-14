@@ -4,24 +4,24 @@ Come verificare che il sistema funzioni e quali risultati aspettarsi. Il contrat
 
 Le verifiche sono di quattro tipi:
 
-- **Test automatici**: 437 test sul codice deterministico, senza modello, senza servizi accesi e senza chiave OpenAI, eseguiti anche dall'integrazione continua a ogni push. Vedi [Test automatici](#test-automatici).
+- **Test automatici**: 478 test sul codice deterministico, senza modello, senza servizi accesi e senza chiave OpenAI, eseguiti anche dall'integrazione continua a ogni push. Vedi [Test automatici](#test-automatici).
 - **Valutazione automatica**: le risposte del modello reale su 13 domande, ripetute N volte, con un punteggio deterministico. Vedi [Valutazione automatica](#valutazione-automatica).
 - **Contratto dell'API**: forma delle risposte, codici di errore, sessioni, catena dei grafici, con i servizi accesi. L'esito è OK o KO. Vedi [Test automatici dell'API](#test-automatici-dellapi).
 - **A mano**: il contenuto delle risposte dell'LLM nelle prove dall'interfaccia e nella parte B dello script dell'API. Il modello è probabilistico, quindi i numeri e le scelte degli strumenti si confrontano con la tabella [Valori attesi](#valori-attesi).
 
 ## Test automatici
 
-Sono 437 test: 136 del data agent (`pytest`), 225 del back end (`node:test`, incluso in Node) e 76 del front end (Vitest con jsdom e Testing Library). Non chiamano il modello, non richiedono Chroma né gli altri servizi accesi e non usano la chiave OpenAI. Si lanciano dalla radice del repository, dopo l'installazione ([`docs/INSTALLAZIONE.md`](INSTALLAZIONE.md)):
+Sono 478 test: 177 del data agent (`pytest`), 225 del back end (`node:test`, incluso in Node) e 76 del front end (Vitest con jsdom e Testing Library). Non chiamano il modello, non richiedono Chroma né gli altri servizi accesi e non usano la chiave OpenAI. Si lanciano dalla radice del repository, dopo l'installazione ([`docs/INSTALLAZIONE.md`](INSTALLAZIONE.md)):
 
 ```bash
-(cd data_agent && source venv/bin/activate && pip install -r requirements-dev.txt && python -m pytest)   # 136 test
+(cd data_agent && source venv/bin/activate && pip install -r requirements-dev.txt && python -m pytest)   # 177 test
 (cd "back end" && npm test)                                                                            # 225 test
 (cd "front end" && npm test)                                                                           # 76 test
 ```
 
 `requirements-dev.txt` aggiunge a `requirements.txt` gli strumenti di test, che non entrano nell'immagine della demo. I test del front end richiedono Node.js 22.13 o successivo.
 
-- **Data agent** (`data_agent/tests/`): pulizia e schema dei dati, valori del dataset reale (righe, duplicati, club, nazionalità), API con agente e modello simulati (`MagicMock`), esecuzione concorrente del codice generato e pulizia dei grafici. Il test di concorrenza è stato scritto prima della correzione: falliva in 17 giri su 20 sul codice senza lock e passa in 20 su 20 con il lock ([decisions/06](decisions/06-esecuzione-del-codice-generato.md)).
+- **Data agent** (`data_agent/tests/`): pulizia, schema e limiti dei dati, rapporto di qualità (impronta, percorso nella pulizia, avvisi del confronto con il riferimento, scrittura del rapporto), valori del dataset reale (righe, duplicati, club, nazionalità), API con agente e modello simulati (`MagicMock`), esecuzione concorrente del codice generato e pulizia dei grafici. Il test di concorrenza è stato scritto prima della correzione: falliva in 17 giri su 20 sul codice senza lock e passa in 20 su 20 con il lock ([decisions/06](decisions/06-esecuzione-del-codice-generato.md)).
 - **Back end** (`back end/test/`): route `GET /`, `POST /api/chat` e `GET /charts/:filename` con dipendenze simulate, campi del contratto, intestazioni, configurazione del limite di frequenza, sessioni, soglie del RAG, strumenti dell'orchestratore, client del data agent e punteggio della valutazione automatica.
 - **Front end** (`front end/test/`): client API, conversazione, Markdown senza HTML grezzo, etichette, scheda di errore e testo di riserva dei grafici; dettagli nel [README del front end](../front%20end/README.md#test).
 
@@ -56,11 +56,33 @@ La prima corsa completa è una corsa vera e si conta. Dei due turni sbagliati, u
 
 **Limite intermittente sui difensori centrali.** Sulla domanda "Poi mostrami i 3 CB con il duels_won_pct attuale più alto" l'errore è sempre lo stesso: compare solo Pereira (nella corsa del 9 novembre mancano Balaguer e Ito). Nella prima corsa completa è comparso almeno una volta; nelle corse salvate le risposte corrette sono 29 su 30 (5 su 5 e 20 su 20 il 4 novembre, 4 su 5 il 9 novembre). Con un errore su 30 ripetizioni salvate, più almeno uno nella prima corsa, non si può dire che il limite sia superato: resta un limite dichiarato (vedi [Limiti noti del data agent](#limiti-noti-del-data-agent)).
 
-**Chiamate doppie allo stesso strumento.** La valutazione confronta l'insieme degli strumenti usati e non il numero di chiamate: due chiamate a `analyze_data` nello stesso turno non risultano come errore. Online, l'8 novembre, nel secondo turno della conversazione sulla stagione precedente l'orchestratore ha chiamato `analyze_data` due volte (stagioni 2023/24 e 2024/25) invece di una, con la risposta corretta ([Prove online](#prove-online-8-novembre-2026)). Nel log del back end le chiamate doppie sono 0 su 80 turni nella corsa del 9 novembre e 0 su 1 nella prova dall'interfaccia della stessa conversazione ([Verifica da clone pulito](#verifica-da-clone-pulito-9-novembre-2026)).
+**Chiamate doppie allo stesso strumento.** La valutazione confronta l'insieme degli strumenti usati e non il numero di chiamate: due chiamate a `analyze_data` nello stesso turno non risultano come errore. Online, l'8 novembre, nel secondo turno della conversazione sulla stagione precedente l'orchestratore ha chiamato `analyze_data` due volte (stagioni 2023/24 e 2024/25) invece di una, con la risposta corretta ([Prove online](#prove-online-8-novembre-2026)). Nel log del back end le chiamate doppie sono 0 su 80 turni nella corsa del 9 novembre e 0 su 1 nella prova dall'interfaccia della stessa conversazione ([Verifica da clone pulito](#verifica-da-clone-pulito-9-novembre-2026)); online, il 13 novembre, 0 su 1 ([Prove online](#prove-online-13-novembre-2026)).
 
 ## Benchmark
 
-Il benchmark del data agent misura avvio, memoria e cinque domande rappresentative su dataset sintetici da 1 a 1000 volte il file reale, in pandas e in DuckDB, con una regola di decisione fissata prima di misurare (script in `data_agent/scripts/`: `dataset_sintetico.py`, `benchmark.py`, `benchmark_riepilogo.py`). Esito: pandas basta fino a 60 volte i dati attuali; il primo limite è la memoria, e nessuna domanda supera 1 s (455 ms a 1000×). Soglie, risultati e perché non DuckDB né SQLite: [decisions/09](decisions/09-pandas-e-non-duckdb.md); misure complete nella [corsa completa](../data_agent/scripts/risultati_benchmark/corsa-20261105-1051.md) e nella [corsa preliminare](../data_agent/scripts/risultati_benchmark/corsa-20261105-1042.md).
+Il benchmark del data agent misura avvio, memoria e cinque domande rappresentative su dataset sintetici da 1 a 1000 volte il file reale, in pandas, DuckDB e SQLite, con una regola di decisione fissata prima di misurare (script in `data_agent/scripts/`: `dataset_sintetico.py`, `benchmark.py`, `benchmark_riepilogo.py`). Esito della corsa dell'11 novembre: pandas basta fino a 60 volte i dati attuali. A 100× si supera solo la soglia sulla memoria del dataframe (83,3 MB contro 50), che SQLite su file risolve (3,0 MB) e DuckDB no (50,0 MB). A 1000× si superano anche il picco di memoria e il tempo di avvio, e li risolvono entrambi, ma con SQLite le domande sullo stato attuale richiedono 1,98 s, mentre DuckDB resta al massimo a 142 ms e pandas a 458 ms. I risultati di DuckDB e SQLite sono uguali a quelli di pandas in tutti i 180 confronti. Soglie, lettura dei risultati e conseguenze: [decisions/09](decisions/09-pandas-e-non-duckdb.md); misure complete nella [corsa dell'11 novembre](../data_agent/scripts/risultati_benchmark/corsa-20261111-1318.md). Le corse del 5 novembre, con pandas e DuckDB, sono la [completa](../data_agent/scripts/risultati_benchmark/corsa-20261105-1051.md) e la [preliminare](../data_agent/scripts/risultati_benchmark/corsa-20261105-1042.md).
+
+## Rapporto di qualità dei dati
+
+A ogni avvio, dopo il controllo dello schema e senza bloccare l'avvio, il data agent scrive un rapporto sulla qualità dei dati: impronta del CSV, righe dopo ogni passo della pulizia e valori cambiati per colonna, profilo del grezzo e del pulito, limiti dello schema con il valore osservato e il margine, e il confronto con il riferimento committato (`data_agent/qualita_riferimento.json`), con un avviso per ogni scostamento oltre le tolleranze. Cosa contiene e perché: [decisions/05](decisions/05-pulizia-e-schema-dei-dati.md). Nel log compare un riepilogo, nelle righe che iniziano con `Qualità dei dati — `; il rapporto completo in JSON va in `data_agent/quality_reports/` (esclusa da git; si cambia con `QUALITY_REPORTS_DIR`), che tiene gli ultimi 10.
+
+| Prova | Esito |
+|---|---|
+| Avvio sul CSV del repository | 0 avvisi, stesso CSV del riferimento (SHA-256 `a2079f301faa…`, 239.138 byte con gli a capo normalizzati); rapporto JSON di 30.856 byte |
+| Tempo aggiunto all'avvio | 21,4 ms in locale (mediana di 5 avvii); 67,5 ms online il 13 novembre, su una CPU più lenta |
+| Impronta della pulizia, presa sul codice precedente (`8d6d7da`) e ripetuta dopo i limiti motivati e la nuova regola dell'altezza | identica: dataframe, tipi, `cleaning_report` e testo del riepilogo passato al modello. Il prompt non è cambiato, quindi la valutazione con il modello reale non è stata rifatta |
+| Dataset sintetico a 10× (`scripts/dataset_sintetico.py`, non modificato) | passa pulizia e schema nuovi, con 120 altezze corrette; 2 avvisi, attesi: righe e giocatori +900% |
+| Calibrazione delle tolleranze: il riferimento senza una stagione (2023/24, 2024/25, 2025/26) e il dataset completo come caricamento nuovo | avvisi su minimi e massimi: 4, 0 e 1 con il 20% dell'ampiezza (6, 2 e 2 con il 10%; 14, 8 e 4 con lo 0%); con tutti i controlli 4, 1 e 2 |
+| A capo del CSV | impronta uguale con a capo LF e CRLF, anche quando un blocco di lettura finisce con il CR (`test_impronta_indipendente_dagli_a_capo`): Git su Windows può scrivere il CSV con CRLF |
+| Container in locale | rapporto di 30.856 byte in `/tmp/quality_reports/`, scritto dall'utente non root |
+| Test automatici | 24 in `data_agent/tests/test_qualita.py`: impronta, profilo, percorso nella pulizia, limiti con osservato e margine, un avviso per ogni controllo e nessun avviso entro le tolleranze, `player_id` negli esempi, JSON senza percorsi assoluti, ultimi 10 rapporti, cartella non scrivibile (avviso e avvio regolare), percorso relativo della cartella |
+
+Il riferimento si aggiorna solo a mano, quando un cambiamento dei dati è voluto, e solo da dati che passano lo schema. Da `data_agent/`, con il `venv` attivo:
+
+```bash
+python scripts/aggiorna_riferimento_qualita.py              # anteprima: avvisi rispetto al riferimento in vigore, nessun file scritto
+python scripts/aggiorna_riferimento_qualita.py --conferma   # riscrive qualita_riferimento.json, da rivedere e committare
+```
 
 ## Prerequisiti
 
@@ -500,3 +522,40 @@ Prova del lock attorno all'esecuzione del codice generato ([decisions/06](decisi
 | Due domande con grafico lanciate in parallelo ("10 giocatori per valore di mercato" e "scout_rating medio per ruolo") | due `chartUrl`, due PNG diversi e corretti (49.624 e 25.852 byte) |
 | Log | le due analisi partono insieme e le esecuzioni del codice si susseguono (8,2 s e 11,7 s): il lock le serializza |
 | Terza domanda con grafico, poi riapertura dei due grafici precedenti | i due grafici si caricano ancora |
+
+## Prove online (13 novembre 2026)
+
+Prove sulla demo (<https://francodesc-scoutedge-analytics.hf.space>) dopo il caricamento del codice con il rapporto di qualità: Space a `6385198`, che corrisponde al commit `2276387` del repository.
+
+### Avvio e configurazione
+
+| Prova | Esito |
+|---|---|
+| File sullo Space | 125 (124 dal repository più `.gitattributes`), nessuno sotto `docs/` |
+| Build e pubblicazione dell'immagine | circa 65 s |
+| Avvio del container | circa 22 s fino a "Tutti i servizi sono attivi" |
+| Indicizzazione del manuale | 18 chunk, 0 orfani |
+| Data agent | dataframe pulito di forma (1185, 35) |
+| Rapporto di qualità | righe `Qualità dei dati — …` nel log, con 0 avvisi; rapporto in `/tmp/quality_reports/` (67,5 ms) |
+| Limite di frequenza | 20 per IP e 100 in totale ogni 15 minuti, con `trust proxy: 2` |
+| Log | nessuna chiave, nessun traceback |
+
+### Le quattro domande della demo: 4 su 4
+
+In una finestra privata del browser:
+
+| Domanda | Strumenti | Esito | Tempo |
+|---|---|---|---|
+| Tempo di prima risposta per priorità alta | `search_handbook` | Corretta | 4,6 s |
+| 10 giocatori con il valore di mercato più alto, con grafico | `analyze_data` con grafico | Corretta, con grafico (49.624 byte) | 18,2 s |
+| Metodologia per i CB e poi i 3 CB con il `duels_won_pct` più alto | `search_handbook` e `analyze_data`, senza grafico | Corretta | 13,3 s |
+| Conversazione: scout_rating medio nell'ultima stagione, poi "e nella stagione precedente?" | un `analyze_data` per turno | Corretta | 6,8 s + 5,5 s |
+
+Nessuna chiamata doppia allo stesso strumento, su una sola prova (vedi [Chiamate doppie allo stesso strumento](#valutazione-automatica)). Nel log compare anche un `FutureWarning` di seaborn (una palette usata senza `hue`), emesso dal codice generato dal modello: è un avviso di deprecazione, non un errore.
+
+### Rotte e intestazioni
+
+| Prova | Esito |
+|---|---|
+| Intestazione `X-Powered-By` | assente |
+| `/analyze`, `/docs`, `/openapi.json`, `/.env` | tutti 404 |

@@ -61,7 +61,7 @@ npm run dev
 (cd "front end" && npm test)
 ```
 
-Si lanciano dalla radice del repository, dopo l'installazione: sono 437 test automatici (136 del data agent, 225 del back end, 76 del front end), senza chiamate al modello né chiave OpenAI, eseguiti anche dall'integrazione continua a ogni push e pull request. Valutazione con il modello reale, benchmark e verifiche manuali: [`docs/TEST.md`](docs/TEST.md).
+Si lanciano dalla radice del repository, dopo l'installazione: sono 478 test automatici (177 del data agent, 225 del back end, 76 del front end), senza chiamate al modello né chiave OpenAI, eseguiti anche dall'integrazione continua a ogni push e pull request. Valutazione con il modello reale, benchmark e verifiche manuali: [`docs/TEST.md`](docs/TEST.md).
 
 ## Documentazione
 
@@ -70,7 +70,7 @@ Si lanciano dalla radice del repository, dopo l'installazione: sono 437 test aut
 - [`docs/DEPLOY.md`](docs/DEPLOY.md): demo online, container, avvio con Docker in locale, pubblicazione su Hugging Face e `TRUST_PROXY`.
 - [`docs/SICUREZZA.md`](docs/SICUREZZA.md): sicurezza, protezioni della demo online e limiti noti.
 - [`docs/PROBLEMI.md`](docs/PROBLEMI.md): risoluzione dei problemi più comuni.
-- [`docs/TEST.md`](docs/TEST.md): test automatici, valutazione con il modello reale, benchmark, verifiche manuali e valori attesi.
+- [`docs/TEST.md`](docs/TEST.md): test automatici, valutazione con il modello reale, benchmark, rapporto di qualità dei dati, prove online, verifiche manuali e valori attesi.
 - [`docs/CONTRATTO_API.md`](docs/CONTRATTO_API.md): contratto tra front end e back end (richieste, risposte, errori, limiti).
 - [`docs/DESIGN_ORCHESTRATORE.md`](docs/DESIGN_ORCHESTRATORE.md): ciclo ReAct, strumenti e system prompt dell'orchestratore.
 - [`docs/decisions/`](docs/decisions/README.md): storia e motivazioni delle scelte principali, con le alternative scartate.

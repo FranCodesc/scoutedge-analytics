@@ -26,7 +26,7 @@ flowchart LR
 - **nginx è l'unico processo raggiungibile dall'esterno** (porta 7860). Serve il front end già compilato e inoltra al back end solo `/api/` e `/charts/`. Tutto il resto dà 404, compreso il controllo di stato `GET /` del back end.
 - Il back end ascolta sulla porta 3001 di tutte le interfacce del container, ma la porta non è pubblicata: si raggiunge solo tramite nginx. Data agent e Chroma ascoltano solo su `127.0.0.1`.
 - Cinque processi, avviati da `deploy/start.sh` nell'ordine in cui dipendono l'uno dall'altro: Chroma, indicizzazione del manuale (18 passaggi), data agent, back end, nginx. Lo script aspetta ogni servizio fino a 120 secondi e, se uno si ferma, chiude il container con un codice diverso da 0, così la piattaforma lo riavvia.
-- Il container gira con un utente non root (UID 1000). Il codice appartiene a root e l'utente può scrivere solo nella cartella dei grafici e in `/tmp`, dove stanno i dati di Chroma.
+- Il container gira con un utente non root (UID 1000). Il codice appartiene a root e l'utente può scrivere solo nella cartella dei grafici e in `/tmp`, dove stanno i dati di Chroma e i rapporti di qualità dei dati (`QUALITY_REPORTS_DIR=/tmp/quality_reports`, impostata nel `Dockerfile`). I rapporti si perdono a ogni riavvio; il riepilogo resta nei log dello Space.
 - Nell'immagine non c'è nessun segreto: i file `.env` sono esclusi da `.dockerignore`, e la chiave e le altre variabili si passano all'avvio.
 - L'immagine occupa 1,96 GB su disco (406 MB compressi) e il container usa tra 212 e 256 MB di memoria.
 
@@ -95,7 +95,7 @@ Lo script:
 - si rifiuta di caricare se l'esportazione contiene file vietati (`.env*` tranne `.env.example`, `venv`, `node_modules`, `chroma_data`, `.git`);
 - usa `hf upload`, che aggiunge e sovrascrive file ma **non cancella** sullo Space quelli tolti dal repository: vanno rimossi a mano, tranne `docs/`, che lo script toglie da solo.
 
-Dopo il caricamento lo Space ricostruisce l'immagine (circa 1 minuto) e riavvia il container.
+Dopo il caricamento lo Space ricostruisce l'immagine (circa 1 minuto) e riavvia il container. Un commit che tocca solo `docs/` o il `README.md` non cambia i file dello Space e non richiede un nuovo caricamento. Le prove sull'ultima versione caricata sono in [`docs/TEST.md`](TEST.md#prove-online-13-novembre-2026).
 
 ## `TRUST_PROXY`: come è stato ricavato
 

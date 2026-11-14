@@ -74,6 +74,7 @@ Ogni ambiente ha un file `.env.example` da copiare in `.env` (i comandi sopra lo
 | | `RATE_LIMIT_GLOBAL` | *(assente)* | Facoltativa. Richieste totali nella finestra, da tutti i client. Demo online: `100` |
 | | `TRUST_PROXY` | *(assente)* | Facoltativa. Numero di proxy davanti al back end (intero ≥ 0). Demo online: `2`. Vedi [`TRUST_PROXY`](DEPLOY.md#trust_proxy-come-è-stato-ricavato) |
 | `data_agent/.env` | `OPENAI_API_KEY` | *(la tua chiave)* | Obbligatoria: modello che scrive il codice di analisi |
+| | `QUALITY_REPORTS_DIR` | *(commentata)* | Facoltativa. Cartella dei rapporti di qualità dei dati; senza la variabile, `data_agent/quality_reports/`. Un percorso relativo si intende rispetto a `data_agent/`. Nel container: `/tmp/quality_reports` |
 | `front end/.env` | `VITE_API_URL` | `http://localhost:3001` | URL del back end. Le variabili `VITE_` finiscono nel browser: qui non vanno mai chiavi |
 
 La stessa chiave può stare nei due file che la richiedono.
@@ -101,7 +102,7 @@ L'immagine è fissata con il digest (Chroma 1.4.4, la versione su cui il progett
 
 ## Avvio
 
-Servono quattro terminali (Chroma gira già in background con Docker). L'ordine conta: ogni servizio ne usa uno di quelli sopra. Tutti i comandi partono dalla radice del repository.
+Servono tre terminali, uno per servizio (Chroma gira già in background con Docker). L'ordine conta: ogni servizio ne usa uno di quelli sopra. Tutti i comandi partono dalla radice del repository.
 
 **1. Chroma.** Se hai appena eseguito `docker run`, è già attivo. Dopo un riavvio del computer:
 
@@ -118,6 +119,8 @@ uvicorn main:app --reload
 ```
 
 Uvicorn ascolta solo su `127.0.0.1` (il comportamento predefinito): non aggiungere `--host 0.0.0.0`. Il data agent esegue codice generato dall'LLM e non deve essere raggiungibile dalla rete (vedi [`docs/SICUREZZA.md`](SICUREZZA.md)).
+
+Prima di `Data agent pronto` il log mostra le righe `Qualità dei dati — …`, il riepilogo del rapporto di qualità: righe del CSV prima e dopo la pulizia, valori cambiati, margini dei limiti dello schema e confronto con il riferimento. Con i dati del repository il confronto dà 0 avvisi; il rapporto completo va in `data_agent/quality_reports/` (vedi [`docs/TEST.md`](TEST.md#rapporto-di-qualità-dei-dati)).
 
 **3. Back end** (secondo terminale). Aspetta `Back end in ascolto su http://localhost:3001`:
 
