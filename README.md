@@ -61,7 +61,7 @@ npm run dev
 (cd "front end" && npm test)
 ```
 
-Si lanciano dalla radice del repository, dopo l'installazione: sono 478 test automatici (177 del data agent, 225 del back end, 76 del front end), senza chiamate al modello né chiave OpenAI, eseguiti anche dall'integrazione continua a ogni push e pull request. Valutazione con il modello reale, benchmark e verifiche manuali: [`docs/TEST.md`](docs/TEST.md).
+Si lanciano dalla radice del repository, dopo l'installazione: sono 479 test automatici (178 del data agent, 225 del back end, 76 del front end), senza chiamate al modello né chiave OpenAI, eseguiti anche dall'integrazione continua a ogni push e pull request. Valutazione con il modello reale, benchmark e verifiche manuali: [`docs/TEST.md`](docs/TEST.md).
 
 ## Documentazione
 

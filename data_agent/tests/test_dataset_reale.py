@@ -4,6 +4,7 @@ from pathlib import Path
 
 import qualita
 import schema
+from cleaning import format_cleaning_report
 
 
 def test_forma_e_conteggi(pulito_reale):
@@ -59,3 +60,12 @@ def test_valori_osservati_dentro_i_limiti(pulito_reale):
     margini = [(v["regola"], m) for v in qualita.limiti_osservati(df)
                for m in (v["margine_min"], v["margine_max"]) if m is not None]
     assert [(regola, m) for regola, m in margini if m < 0] == []
+
+
+def test_riepilogo_per_il_modello_descrive_la_regola_dell_altezza(pulito_reale):
+    # Il riepilogo arriva nel prompt del data agent: deve descrivere la regola vera
+    # della pulizia (4 cifre), non la soglia precedente (sopra 210).
+    _, report = pulito_reale
+    testo = format_cleaning_report(report)
+    assert "12 valori di height_cm di 4 cifre (1000 o più" in testo
+    assert "superiori a 210" not in testo

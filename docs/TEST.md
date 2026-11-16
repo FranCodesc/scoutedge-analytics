@@ -4,17 +4,17 @@ Come verificare che il sistema funzioni e quali risultati aspettarsi. Il contrat
 
 Le verifiche sono di quattro tipi:
 
-- **Test automatici**: 478 test sul codice deterministico, senza modello, senza servizi accesi e senza chiave OpenAI, eseguiti anche dall'integrazione continua a ogni push. Vedi [Test automatici](#test-automatici).
+- **Test automatici**: 479 test sul codice deterministico, senza modello, senza servizi accesi e senza chiave OpenAI, eseguiti anche dall'integrazione continua a ogni push. Vedi [Test automatici](#test-automatici).
 - **Valutazione automatica**: le risposte del modello reale su 13 domande, ripetute N volte, con un punteggio deterministico. Vedi [Valutazione automatica](#valutazione-automatica).
 - **Contratto dell'API**: forma delle risposte, codici di errore, sessioni, catena dei grafici, con i servizi accesi. L'esito è OK o KO. Vedi [Test automatici dell'API](#test-automatici-dellapi).
 - **A mano**: il contenuto delle risposte dell'LLM nelle prove dall'interfaccia e nella parte B dello script dell'API. Il modello è probabilistico, quindi i numeri e le scelte degli strumenti si confrontano con la tabella [Valori attesi](#valori-attesi).
 
 ## Test automatici
 
-Sono 478 test: 177 del data agent (`pytest`), 225 del back end (`node:test`, incluso in Node) e 76 del front end (Vitest con jsdom e Testing Library). Non chiamano il modello, non richiedono Chroma né gli altri servizi accesi e non usano la chiave OpenAI. Si lanciano dalla radice del repository, dopo l'installazione ([`docs/INSTALLAZIONE.md`](INSTALLAZIONE.md)):
+Sono 479 test: 178 del data agent (`pytest`), 225 del back end (`node:test`, incluso in Node) e 76 del front end (Vitest con jsdom e Testing Library). Non chiamano il modello, non richiedono Chroma né gli altri servizi accesi e non usano la chiave OpenAI. Si lanciano dalla radice del repository, dopo l'installazione ([`docs/INSTALLAZIONE.md`](INSTALLAZIONE.md)):
 
 ```bash
-(cd data_agent && source venv/bin/activate && pip install -r requirements-dev.txt && python -m pytest)   # 177 test
+(cd data_agent && source venv/bin/activate && pip install -r requirements-dev.txt && python -m pytest)   # 178 test
 (cd "back end" && npm test)                                                                            # 225 test
 (cd "front end" && npm test)                                                                           # 76 test
 ```
@@ -51,12 +51,13 @@ Lo script salva ogni corsa in `back end/eval/risultati/` (JSON con tutte le risp
 | [Corsa completa del 4 novembre](../back%20end/eval/risultati/corsa-20261104-1008.md) | 5 | 80 su 80 | 80 su 80 |
 | [Difensori centrali, 4 novembre](../back%20end/eval/risultati/corsa-20261104-1030.md) (`cb_metodologia_e_dati`) | 20 | 20 su 20 | 20 su 20 |
 | [Corsa completa del 9 novembre](../back%20end/eval/risultati/corsa-20261109-1046.md), da clone pulito | 5 | 79 su 80 | 80 su 80 |
+| [Corsa completa del 16 novembre](../back%20end/eval/risultati/corsa-20261116-1032.md), dopo la correzione del riepilogo delle correzioni | 5 | 79 su 80 | 80 su 80 |
 
-La prima corsa completa è una corsa vera e si conta. Dei due turni sbagliati, uno è una risposta sui tre difensori centrali con il solo Pereira; dell'altro non resta traccia ([decisions/07](decisions/07-test-e-valutazione.md)).
+La prima corsa completa è una corsa vera e si conta. Dei due turni sbagliati, uno è una risposta sui tre difensori centrali con il solo Pereira; dell'altro non resta traccia ([decisions/07](decisions/07-test-e-valutazione.md)). Nella corsa del 16 novembre l'unico turno sbagliato è sulla domanda dei 10 giocatori con il valore di mercato più alto: tabella e grafico corretti, ma importi scritti con un decimale (18,680,000.0), che il punteggio, senza tolleranza, non riconosce come 18.680.000 (vedi [Limiti noti del data agent](#limiti-noti-del-data-agent)). Il punteggio non è stato cambiato dopo la corsa.
 
-**Limite intermittente sui difensori centrali.** Sulla domanda "Poi mostrami i 3 CB con il duels_won_pct attuale più alto" l'errore è sempre lo stesso: compare solo Pereira (nella corsa del 9 novembre mancano Balaguer e Ito). Nella prima corsa completa è comparso almeno una volta; nelle corse salvate le risposte corrette sono 29 su 30 (5 su 5 e 20 su 20 il 4 novembre, 4 su 5 il 9 novembre). Con un errore su 30 ripetizioni salvate, più almeno uno nella prima corsa, non si può dire che il limite sia superato: resta un limite dichiarato (vedi [Limiti noti del data agent](#limiti-noti-del-data-agent)).
+**Limite intermittente sui difensori centrali.** Sulla domanda "Poi mostrami i 3 CB con il duels_won_pct attuale più alto" l'errore è sempre lo stesso: compare solo Pereira (nella corsa del 9 novembre mancano Balaguer e Ito). Nella prima corsa completa è comparso almeno una volta; nelle corse salvate le risposte corrette sono 34 su 35 (5 su 5 e 20 su 20 il 4 novembre, 4 su 5 il 9 novembre, 5 su 5 il 16 novembre). Con un errore su 35 ripetizioni salvate, più almeno uno nella prima corsa, non si può dire che il limite sia superato: resta un limite dichiarato (vedi [Limiti noti del data agent](#limiti-noti-del-data-agent)).
 
-**Chiamate doppie allo stesso strumento.** La valutazione confronta l'insieme degli strumenti usati e non il numero di chiamate: due chiamate a `analyze_data` nello stesso turno non risultano come errore. Online, l'8 novembre, nel secondo turno della conversazione sulla stagione precedente l'orchestratore ha chiamato `analyze_data` due volte (stagioni 2023/24 e 2024/25) invece di una, con la risposta corretta ([Prove online](#prove-online-8-novembre-2026)). Nel log del back end le chiamate doppie sono 0 su 80 turni nella corsa del 9 novembre e 0 su 1 nella prova dall'interfaccia della stessa conversazione ([Verifica da clone pulito](#verifica-da-clone-pulito-9-novembre-2026)); online, il 13 novembre, 0 su 1 ([Prove online](#prove-online-13-novembre-2026)).
+**Chiamate doppie allo stesso strumento.** La valutazione confronta l'insieme degli strumenti usati e non il numero di chiamate: due chiamate a `analyze_data` nello stesso turno non risultano come errore. Online, l'8 novembre, nel secondo turno della conversazione sulla stagione precedente l'orchestratore ha chiamato `analyze_data` due volte (stagioni 2023/24 e 2024/25) invece di una, con la risposta corretta ([Prove online](#prove-online-8-novembre-2026)). Nel log del back end le chiamate doppie sono 0 su 80 turni nella corsa del 9 novembre e 0 su 1 nella prova dall'interfaccia della stessa conversazione ([Verifica da clone pulito](#verifica-da-clone-pulito-9-novembre-2026)); online, il 13 novembre, 0 su 1 ([Prove online](#prove-online-13-novembre-2026)); nella corsa del 16 novembre di nuovo 0 su 80.
 
 ## Benchmark
 
@@ -70,7 +71,7 @@ A ogni avvio, dopo il controllo dello schema e senza bloccare l'avvio, il data a
 |---|---|
 | Avvio sul CSV del repository | 0 avvisi, stesso CSV del riferimento (SHA-256 `a2079f301faa…`, 239.138 byte con gli a capo normalizzati); rapporto JSON di 30.856 byte |
 | Tempo aggiunto all'avvio | 21,4 ms in locale (mediana di 5 avvii); 67,5 ms online il 13 novembre, su una CPU più lenta |
-| Impronta della pulizia, presa sul codice precedente (`8d6d7da`) e ripetuta dopo i limiti motivati e la nuova regola dell'altezza | identica: dataframe, tipi, `cleaning_report` e testo del riepilogo passato al modello. Il prompt non è cambiato, quindi la valutazione con il modello reale non è stata rifatta |
+| Impronta della pulizia, presa sul codice precedente (`8d6d7da`) e ripetuta dopo i limiti motivati e la nuova regola dell'altezza | identica: dataframe, tipi, `cleaning_report` e testo del riepilogo passato al modello. Quel testo descriveva però ancora la soglia precedente dell'altezza (`superiori a 210`): la frase è stata corretta dopo, con un test che la controlla, e la valutazione con il modello reale è stata rifatta il 16 novembre (79 su 80 valori, 80 su 80 strumenti) |
 | Dataset sintetico a 10× (`scripts/dataset_sintetico.py`, non modificato) | passa pulizia e schema nuovi, con 120 altezze corrette; 2 avvisi, attesi: righe e giocatori +900% |
 | Calibrazione delle tolleranze: il riferimento senza una stagione (2023/24, 2024/25, 2025/26) e il dataset completo come caricamento nuovo | avvisi su minimi e massimi: 4, 0 e 1 con il 20% dell'ampiezza (6, 2 e 2 con il 10%; 14, 8 e 4 con lo 0%); con tutti i controlli 4, 1 e 2 |
 | A capo del CSV | impronta uguale con a capo LF e CRLF, anche quando un blocco di lettura finisce con il CR (`test_impronta_indipendente_dagli_a_capo`): Git su Windows può scrivere il CSV con CRLF |
@@ -203,7 +204,7 @@ Il data agent è un LLM che scrive ed esegue codice: alcune domande hanno quindi
 - Le risposte non dichiarano i codici di ruolo usati nei filtri (0 su 8), anche se i filtri sono corretti.
 - Il CDM è conteggiato tra i centrocampisti. Il manuale (§3.3) lo valuta "come un difensore aggiunto", ma questo riguarda le metriche, non il gruppo di ruolo.
 - "Esterni" e "laterali" non sono mappati su un ruolo (termine ambiguo): ci si aspetta un chiarimento o i codici dichiarati.
-- **Formato degli importi nel testo**: gli importi nelle risposte sono scritti nella notazione anglosassone (18,680,000: virgola per le migliaia, punto per i decimali), mentre gli assi dei grafici usano il punto per le migliaia (17.500.000). Una regola sul formato nel prompt del data agent è stata provata e tolta perché peggiorava risposte che non c'entravano con gli importi.
+- **Formato degli importi nel testo**: gli importi nelle risposte sono scritti nella notazione anglosassone (18,680,000: virgola per le migliaia, punto per i decimali; a volte con un decimale, 18,680,000.0), mentre gli assi dei grafici usano il punto per le migliaia (17.500.000). Una regola sul formato nel prompt del data agent è stata provata e tolta perché peggiorava risposte che non c'entravano con gli importi.
 - **Asse dei grafici scelti dal modello**: l'asse può non partire da zero (per esempio lo scout_rating per stagione parte da 60), il che amplifica visivamente le differenze.
 - L'output dello strumento è limitato a 6000 caratteri e a 60 righe.
 - Un solo grafico per esecuzione.

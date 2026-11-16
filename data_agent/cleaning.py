@@ -301,7 +301,7 @@ I conteggi delle correzioni sono riferiti alle righe del file grezzo; quelli del
 - Club: {club['grafie_originali']} grafie normalizzate in {club['grafie_finali']} club ({club['righe_modificate']} righe modificate).
 - Valore di mercato: {report['market_value_eur']['righe_in_formato_italiano_convertite']} righe in formato italiano (es. 11.415.000,00) convertite in numero.
 - Date: {date['observation_date']} date di osservazione e {date['contract_expiry']} scadenze di contratto in formato GG/MM/AAAA convertite.
-- Correzioni di range: {rng['pass_accuracy_pct_dimezzati']} valori di pass_accuracy_pct superiori a 100 dimezzati; {rng['sprint_speed_kmh_resi_positivi']} valori negativi di sprint_speed_kmh resi positivi; {rng['height_cm_divisi_per_10']} valori di height_cm superiori a 210 divisi per 10.
+- Correzioni di range: {rng['pass_accuracy_pct_dimezzati']} valori di pass_accuracy_pct superiori a 100 dimezzati; {rng['sprint_speed_kmh_resi_positivi']} valori negativi di sprint_speed_kmh resi positivi; {rng['height_cm_divisi_per_10']} valori di height_cm di 4 cifre (1000 o più: centimetri scritti con uno zero in più) divisi per 10.
 - Nomi traslitterati dal giapponese: {nomi['righe']} righe ({nomi['nomi_distinti']} nomi distinti).
 - Titoli e qualifiche (es. Dr., Mr, Herr, MBA) tolti dai nomi: {titoli['giocatori']} giocatori ({titoli['righe']} righe), per esempio "{titoli['esempio']}".
 - Valori mancanti imputati con la mediana per ruolo e stagione:
