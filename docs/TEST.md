@@ -474,9 +474,9 @@ Per provarlo online i valori sono stati abbassati a 3 e poi ripristinati (20 per
 
 Controllati i log completi dello Space dopo le prove: nessuna chiave, nessun traceback, indirizzi IP solo mascherati. Nei log del back end compaiono gli argomenti che l'orchestratore passa agli strumenti (le domande riformulate): è un limite dichiarato in [`docs/SICUREZZA.md`](SICUREZZA.md#la-demo-online).
 
-### Non ancora osservato
+### Pausa dopo 48 ore senza visite
 
-La pausa automatica dello Space dopo 48 ore senza visite (non modificabile con la CPU basic) non è stata ancora osservata; è il comportamento dichiarato dalla piattaforma.
+Durante queste prove la pausa automatica dello Space dopo 48 ore senza visite (non modificabile con la CPU basic) non era ancora stata osservata. È stata osservata il 16 novembre 2026: alla prima visita dopo la pausa lo Space è ripartito e i servizi erano tutti attivi dopo circa 27 s, in linea con i circa 30 s indicati nel README.
 
 ## Prove online (8 novembre 2026)
 
