@@ -560,3 +560,23 @@ Nessuna chiamata doppia allo stesso strumento, su una sola prova (vedi [Chiamate
 |---|---|
 | Intestazione `X-Powered-By` | assente |
 | `/analyze`, `/docs`, `/openapi.json`, `/.env` | tutti 404 |
+
+## Verifica da clone pulito (16 novembre 2026)
+
+Il repository è stato clonato in una cartella nuova al commit `d7ae7b1` e installato seguendo solo il [README](../README.md) e [`docs/INSTALLAZIONE.md`](INSTALLAZIONE.md), come il 9 novembre. I file `.env` sono stati ricostruiti dai `.env.example` attuali più la chiave: l'unica differenza rispetto agli esempi è la riga `OPENAI_API_KEY`.
+
+| Passo | Esito |
+|---|---|
+| Test automatici | 178 del data agent (circa 21 s), 225 del back end, 76 del front end; lint pulito |
+| `npm audit` del back end | Nessuna vulnerabilità |
+| `npm audit` del front end | 5 moderate, tutte su dipendenze di sviluppo; con `--omit=dev` nessuna. Sono gli stessi due avvisi del 9 novembre (`minimatch` tramite ESLint, `postcss-selector-parser` tramite `@tailwindcss/typography`); per `minimatch` ora esiste una correzione senza `--force`, non applicata (vedi sotto) |
+| Indicizzazione del manuale, con il comando del README | 18 chunk, 0 orfani |
+| Avvio del data agent | Rapporto di qualità con 0 avvisi (stesso CSV del riferimento); dataframe pulito di forma (1185, 35) |
+| `npm run test:api -- --solo-a` | 23 OK, 0 KO |
+| Le quattro domande della demo dall'interfaccia | Corrette, con gli strumenti attesi; al secondo turno della quarta una sola chiamata ad `analyze_data` |
+
+Punti da notare:
+
+- **Valutazione con il modello reale non ripetuta**: dopo la [corsa del 16 novembre](../back%20end/eval/risultati/corsa-20261116-1032.md) nessun prompt è cambiato.
+- **Correzione di `minimatch` non applicata.** Riguarda solo lo strumento di lint, che non arriva nel codice servito al browser né nella demo. Applicarla cambierebbe `front end/package-lock.json`, che serve anche a costruire la demo, e richiederebbe test, build e una nuova pubblicazione dello Space. Da riesaminare al prossimo aggiornamento delle dipendenze del front end; per `postcss-selector-parser` la correzione richiede ancora `--force` con un downgrade.
+- **Python.** Come il 9 novembre, `python3.13` non è nel `PATH` del Mac di prova: il `venv` è stato creato con il percorso completo dell'interprete (Python 3.13.9).
