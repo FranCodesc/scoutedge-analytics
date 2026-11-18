@@ -67,6 +67,29 @@ attendi() {
 # Arresto richiesto dalla piattaforma (docker stop): chiude i servizi ed esce.
 trap 'log "arresto richiesto"; ferma_tutto; exit 0' TERM INT
 
+# Macchina su cui gira il container. nproc e /proc/meminfo descrivono la macchina
+# che lo ospita: i limiti del container si leggono dai file di cgroup.
+CPU_MODELLO=$(grep -m1 'model name' /proc/cpuinfo 2>/dev/null | cut -d: -f2 | sed 's/^ *//')
+log "Macchina: CPU ${CPU_MODELLO:-non rilevata}; limite CPU $(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo 'non rilevato'); limite memoria $(cat /sys/fs/cgroup/memory.max 2>/dev/null || echo 'non rilevato')"
+
+# Cartella dei rapporti di qualità. Si prova a scriverci davvero (un file creato e
+# subito cancellato): i permessi mostrati da una cartella montata possono non dire
+# se la scrittura riesce. Se non riesce, si ripiega su /tmp, dove i rapporti si
+# perdono a ogni riavvio.
+scrivibile() {
+  mkdir -p "$1" 2>/dev/null && touch "$1/.prova-scrittura" 2>/dev/null || return 1
+  rm -f "$1/.prova-scrittura" 2>/dev/null
+  return 0
+}
+RAPPORTI_RIPIEGO=/tmp/quality_reports
+QUALITY_REPORTS_DIR=${QUALITY_REPORTS_DIR:-$RAPPORTI_RIPIEGO}
+if ! scrivibile "$QUALITY_REPORTS_DIR"; then
+  log "Attenzione: $QUALITY_REPORTS_DIR non scrivibile, uso $RAPPORTI_RIPIEGO (i rapporti si perdono a ogni riavvio)"
+  QUALITY_REPORTS_DIR=$RAPPORTI_RIPIEGO
+fi
+export QUALITY_REPORTS_DIR
+log "Rapporti di qualità in $QUALITY_REPORTS_DIR"
+
 # 1) Chroma, solo su 127.0.0.1. I dati stanno in una cartella temporanea: a ogni
 #    avvio si riparte da zero e il manuale viene indicizzato di nuovo.
 CHROMA_DATA=/tmp/chroma-data
