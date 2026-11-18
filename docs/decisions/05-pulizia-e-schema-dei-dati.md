@@ -62,7 +62,7 @@ Le tolleranze sono calibrate togliendo dal riferimento una stagione alla volta e
 - Gli avvisi sono informativi: qualche avviso su dati buoni è atteso (fino a 4 su minimi e massimi nella calibrazione).
 - Le stagioni ammesse sono scritte in `schema.py` e nel prompt dell'orchestratore: se cambia il dataset vanno aggiornate in entrambi, e il riferimento va rigenerato.
 - La pulizia è la parte più lunga dell'avvio: circa il 90% del tempo nel benchmark ([risultati](../../data_agent/scripts/risultati_benchmark/corsa-20261111-1318.md)). Il rapporto aggiunge circa 21 ms in locale.
-- Nel container i rapporti vanno in `/tmp/quality_reports` e si perdono a ogni riavvio; resta il riepilogo nei log ([DEPLOY.md](../DEPLOY.md#architettura-del-container)).
+- Nel container i rapporti vanno in `/data/quality_reports`, il bucket montato nello Space, e restano tra i riavvii; se lì non si può scrivere, in `/tmp/quality_reports` ([DEPLOY.md](../DEPLOY.md#architettura-del-container)).
 - `scripts/dataset_sintetico.py` ripete alcuni limiti dello schema, compatibili con quelli nuovi: non è stato modificato perché i risultati del benchmark dipendono da lui.
 
 ## Numeri

@@ -2,7 +2,7 @@
 
 La demo è pubblica all'indirizzo <https://francodesc-scoutedge-analytics.hf.space>, su uno Space Docker di Hugging Face. Esegue lo stesso codice del repository, impacchettato in un unico container.
 
-Lo Space va in pausa dopo 48 ore senza visite. Alla prima apertura dopo una pausa la demo riparte in circa 30 secondi. Le conversazioni e i grafici generati non sopravvivono al riavvio: le sessioni stanno in memoria e il manuale viene indicizzato di nuovo a ogni avvio.
+Lo Space va in pausa dopo 48 ore senza visite. Alla prima apertura dopo una pausa la demo riparte in circa 30 secondi. Le conversazioni e i grafici generati non sopravvivono al riavvio: le sessioni stanno in memoria e il manuale viene indicizzato di nuovo a ogni avvio. I rapporti di qualità dei dati invece restano: vanno in un bucket di Hugging Face montato nello Space.
 
 ## Architettura del container
 
@@ -26,7 +26,9 @@ flowchart LR
 - **nginx è l'unico processo raggiungibile dall'esterno** (porta 7860). Serve il front end già compilato e inoltra al back end solo `/api/` e `/charts/`. Tutto il resto dà 404, compreso il controllo di stato `GET /` del back end.
 - Il back end ascolta sulla porta 3001 di tutte le interfacce del container, ma la porta non è pubblicata: si raggiunge solo tramite nginx. Data agent e Chroma ascoltano solo su `127.0.0.1`.
 - Cinque processi, avviati da `deploy/start.sh` nell'ordine in cui dipendono l'uno dall'altro: Chroma, indicizzazione del manuale (18 passaggi), data agent, back end, nginx. Lo script aspetta ogni servizio fino a 120 secondi e, se uno si ferma, chiude il container con un codice diverso da 0, così la piattaforma lo riavvia.
-- Il container gira con un utente non root (UID 1000). Il codice appartiene a root e l'utente può scrivere solo nella cartella dei grafici e in `/tmp`, dove stanno i dati di Chroma e i rapporti di qualità dei dati (`QUALITY_REPORTS_DIR=/tmp/quality_reports`, impostata nel `Dockerfile`). I rapporti si perdono a ogni riavvio; il riepilogo resta nei log dello Space.
+- Il container gira con un utente non root (UID 1000). Il codice appartiene a root e l'utente può scrivere solo nella cartella dei grafici, in `/tmp` e, online, nel bucket montato su `/data`.
+- **Cosa resta dopo un riavvio.** I rapporti di qualità dei dati vanno in `/data/quality_reports` (`QUALITY_REPORTS_DIR`, impostata nel `Dockerfile`), cioè nel bucket di Hugging Face `FranCodesc/scoutedge-analytics-storage`, e restano tra i riavvii; il data agent tiene gli ultimi 10. Il bucket è pubblico e si consulta all'indirizzo <https://huggingface.co/buckets/FranCodesc/scoutedge-analytics-storage/tree/quality_reports>: contiene solo statistiche del dataset fittizio, che è già pubblico nel repository. Restano in `/tmp`, per scelta, i dati di Chroma, che si ricostruiscono a ogni avvio dal manuale (18 passaggi con id fissi), e i grafici, che hanno già una pulizia automatica dopo 2 ore. Le sessioni stanno in memoria.
+- **Ripiego.** All'avvio `deploy/start.sh` prova a scrivere nella cartella dei rapporti. Se non riesce, per esempio con `docker run` in locale senza bucket, usa `/tmp/quality_reports` e lo scrive nel log (`[avvio] Attenzione: /data/quality_reports non scrivibile, uso /tmp/quality_reports …`); il servizio parte comunque. Nel log compaiono anche la CPU e i limiti di CPU e memoria del container (`[avvio] Macchina: …`).
 - Nell'immagine non c'è nessun segreto: i file `.env` sono esclusi da `.dockerignore`, e la chiave e le altre variabili si passano all'avvio.
 - L'immagine occupa 1,96 GB su disco (406 MB compressi) e il container usa tra 212 e 256 MB di memoria.
 
@@ -61,6 +63,8 @@ docker run --rm --name scoutedge -p 127.0.0.1:7860:7860 --env-file ~/scoutedge-c
 
 Quando il log mostra `[avvio] Tutti i servizi sono attivi.` (circa 20 secondi), apri <http://localhost:7860>. Usa esattamente questo indirizzo, lo stesso della build: con `127.0.0.1` al posto di `localhost` il browser lo tratterebbe come un'origine diversa e la CORS bloccherebbe le richieste. Per cambiare indirizzo, rifai la build con un altro `VITE_API_URL` e aggiorna `FRONTEND_ORIGIN`. Per fermare: `Ctrl+C`, oppure `docker stop scoutedge` da un altro terminale.
 
+Senza bucket i rapporti di qualità vanno in `/tmp/quality_reports` dentro il container, e il log lo dice. Per tenerli sul computer si può montare una cartella su `/data`, aggiungendo a `docker run` per esempio `-v /tmp/scoutedge-data:/data`.
+
 Per provare il limite di frequenza in locale basta abbassare i valori nel file (per esempio `RATE_LIMIT_PER_IP=3`). Le prove fatte sono in [`docs/TEST.md`](TEST.md#prove-del-limite-di-frequenza-in-locale).
 
 ## Pubblicazione su Hugging Face
@@ -79,6 +83,8 @@ Per provare il limite di frequenza in locale basta abbassare i valori nel file (
 
 Le variabili di uno Space sono pubbliche: per questo la chiave sta tra i secret e nelle variabili ci sono solo valori che non sono segreti.
 
+**Bucket per i rapporti di qualità** (scheda *Settings* → *Storage Buckets* → *Mount a bucket*): un bucket nuovo, nella demo `FranCodesc/scoutedge-analytics-storage`, pubblico, montato su `/data` in *Read & Write*. Il montaggio riavvia lo Space. Senza bucket la demo funziona lo stesso, con i rapporti in `/tmp` (vedi [Architettura del container](#architettura-del-container)).
+
 **Caricamento.** Prima si pubblica il commit su GitHub, poi lo si carica sullo Space, così i due restano allo stesso commit:
 
 ```bash
@@ -95,7 +101,7 @@ Lo script:
 - si rifiuta di caricare se l'esportazione contiene file vietati (`.env*` tranne `.env.example`, `venv`, `node_modules`, `chroma_data`, `.git`);
 - usa `hf upload`, che aggiunge e sovrascrive file ma **non cancella** sullo Space quelli tolti dal repository: vanno rimossi a mano, tranne `docs/`, che lo script toglie da solo.
 
-Dopo il caricamento lo Space ricostruisce l'immagine (circa 1 minuto) e riavvia il container. Un commit che tocca solo `docs/` o il `README.md` non cambia i file dello Space e non richiede un nuovo caricamento. Le prove sull'ultima versione caricata sono in [`docs/TEST.md`](TEST.md#prove-online-13-novembre-2026).
+Dopo il caricamento lo Space ricostruisce l'immagine (circa 1 minuto) e riavvia il container. Un commit che tocca solo `docs/` o il `README.md` non cambia i file dello Space e non richiede un nuovo caricamento. Le prove sull'ultima versione caricata sono in [`docs/TEST.md`](TEST.md#prove-online-18-novembre-2026).
 
 ## `TRUST_PROXY`: come è stato ricavato
 

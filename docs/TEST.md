@@ -76,6 +76,7 @@ A ogni avvio, dopo il controllo dello schema e senza bloccare l'avvio, il data a
 | Calibrazione delle tolleranze: il riferimento senza una stagione (2023/24, 2024/25, 2025/26) e il dataset completo come caricamento nuovo | avvisi su minimi e massimi: 4, 0 e 1 con il 20% dell'ampiezza (6, 2 e 2 con il 10%; 14, 8 e 4 con lo 0%); con tutti i controlli 4, 1 e 2 |
 | A capo del CSV | impronta uguale con a capo LF e CRLF, anche quando un blocco di lettura finisce con il CR (`test_impronta_indipendente_dagli_a_capo`): Git su Windows può scrivere il CSV con CRLF |
 | Container in locale | rapporto di 30.856 byte in `/tmp/quality_reports/`, scritto dall'utente non root |
+| Container con il bucket (online, 17 e 18 novembre) | rapporti in `/data/quality_reports`, che restano dopo i riavvii; senza bucket ripiego su `/tmp/quality_reports`, scritto nel log ([Prove online](#prove-online-18-novembre-2026)) |
 | Test automatici | 24 in `data_agent/tests/test_qualita.py`: impronta, profilo, percorso nella pulizia, limiti con osservato e margine, un avviso per ogni controllo e nessun avviso entro le tolleranze, `player_id` negli esempi, JSON senza percorsi assoluti, ultimi 10 rapporti, cartella non scrivibile (avviso e avvio regolare), percorso relativo della cartella |
 
 Il riferimento si aggiorna solo a mano, quando un cambiamento dei dati è voluto, e solo da dati che passano lo schema. Da `data_agent/`, con il `venv` attivo:
@@ -580,3 +581,31 @@ Punti da notare:
 - **Valutazione con il modello reale non ripetuta**: dopo la [corsa del 16 novembre](../back%20end/eval/risultati/corsa-20261116-1032.md) nessun prompt è cambiato.
 - **Correzione di `minimatch` non applicata.** Riguarda solo lo strumento di lint, che non arriva nel codice servito al browser né nella demo. Applicarla cambierebbe `front end/package-lock.json`, che serve anche a costruire la demo, e richiederebbe test, build e una nuova pubblicazione dello Space. Da riesaminare al prossimo aggiornamento delle dipendenze del front end; per `postcss-selector-parser` la correzione richiede ancora `--force` con un downgrade.
 - **Python.** Come il 9 novembre, `python3.13` non è nel `PATH` del Mac di prova: il `venv` è stato creato con il percorso completo dell'interprete (Python 3.13.9).
+
+## Prove online (18 novembre 2026)
+
+Prove sulla persistenza dei rapporti di qualità: Space a `b8b51a8`, che corrisponde al commit `f47ce06` del repository, con il bucket `FranCodesc/scoutedge-analytics-storage` montato su `/data` in lettura e scrittura.
+
+### Prova preliminare (17 novembre)
+
+Prima di cambiare il codice, con la sola variabile `QUALITY_REPORTS_DIR=/data/quality_reports` nelle impostazioni dello Space (prevale sul valore del `Dockerfile`), il rapporto è stato scritto nel bucket dall'utente non root, senza errori di permessi; dopo un riavvio i file nel bucket erano 2.
+
+### Container in locale
+
+| Prova | Esito |
+|---|---|
+| `docker run` senza bucket | `[avvio] Attenzione: /data/quality_reports non scrivibile, uso /tmp/quality_reports …`; rapporto di 30.856 byte in `/tmp/quality_reports/`; nessun file di prova rimasto |
+| `docker run` con una cartella montata su `/data` | nessun avviso; rapporto in `/data/quality_reports/`, visibile nella cartella del computer |
+| Contenuto dell'immagine | in `/app/data_agent` le stesse 8 voci di prima |
+
+### Online
+
+| Prova | Esito |
+|---|---|
+| File sullo Space | 126, caricati al secondo tentativo: il primo si è interrotto per un errore di rete prima di caricare qualunque file |
+| Macchina, dal log | Intel Xeon Platinum 8375C a 2,90 GHz; limite di 2 CPU (`cpu.max` `200000 100000`) e di 16 GB di memoria |
+| Avvio | circa 21 s fino a "Tutti i servizi sono attivi"; 18 chunk, 0 orfani; dataframe (1185, 35); 0 avvisi di qualità |
+| Rapporti dopo i riavvii | 5 file nel bucket dopo 5 avvii, di 30,9 kB ciascuno (2 il 17 e 3 il 18 novembre) |
+| Valore dal `Dockerfile` | tolta la variabile della prova preliminare, i rapporti vanno ancora in `/data/quality_reports` |
+| Rotazione degli ultimi 10 | con 7 file finti dal nome più vecchio caricati nel bucket (11 file), dopo un riavvio i file erano 10: cancellati i 2 finti più vecchi e aggiunto il rapporto nuovo; i finti rimasti sono stati tolti a mano |
+| Domande della demo | prima e seconda corrette, la seconda con il grafico |

@@ -74,7 +74,7 @@ Ogni ambiente ha un file `.env.example` da copiare in `.env` (i comandi sopra lo
 | | `RATE_LIMIT_GLOBAL` | *(assente)* | Facoltativa. Richieste totali nella finestra, da tutti i client. Demo online: `100` |
 | | `TRUST_PROXY` | *(assente)* | Facoltativa. Numero di proxy davanti al back end (intero ≥ 0). Demo online: `2`. Vedi [`TRUST_PROXY`](DEPLOY.md#trust_proxy-come-è-stato-ricavato) |
 | `data_agent/.env` | `OPENAI_API_KEY` | *(la tua chiave)* | Obbligatoria: modello che scrive il codice di analisi |
-| | `QUALITY_REPORTS_DIR` | *(commentata)* | Facoltativa. Cartella dei rapporti di qualità dei dati; senza la variabile, `data_agent/quality_reports/`. Un percorso relativo si intende rispetto a `data_agent/`. Nel container: `/tmp/quality_reports` |
+| | `QUALITY_REPORTS_DIR` | *(commentata)* | Facoltativa. Cartella dei rapporti di qualità dei dati; senza la variabile, `data_agent/quality_reports/`. Un percorso relativo si intende rispetto a `data_agent/`. Nel container: `/data/quality_reports` (il bucket della demo), con ripiego su `/tmp/quality_reports` |
 | `front end/.env` | `VITE_API_URL` | `http://localhost:3001` | URL del back end. Le variabili `VITE_` finiscono nel browser: qui non vanno mai chiavi |
 
 La stessa chiave può stare nei due file che la richiedono.
