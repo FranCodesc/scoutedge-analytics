@@ -26,7 +26,7 @@ IMMAGINE=python:3.13-slim-trixie
 
 DIMENSIONI="1 10 30 60 100 1000"
 RIPETIZIONI=5
-TIMEOUT=3h
+TIMEOUT=6h
 NOME=benchmark-completo
 CARTELLA=benchmark
 SFONDO="--detach"
