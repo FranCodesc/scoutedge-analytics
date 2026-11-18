@@ -609,3 +609,27 @@ Prima di cambiare il codice, con la sola variabile `QUALITY_REPORTS_DIR=/data/qu
 | Valore dal `Dockerfile` | tolta la variabile della prova preliminare, i rapporti vanno ancora in `/data/quality_reports` |
 | Rotazione degli ultimi 10 | con 7 file finti dal nome più vecchio caricati nel bucket (11 file), dopo un riavvio i file erano 10: cancellati i 2 finti più vecchi e aggiunto il rapporto nuovo; i finti rimasti sono stati tolti a mano |
 | Domande della demo | prima e seconda corrette, la seconda con il grafico |
+
+## Verifica da clone pulito (18 novembre 2026)
+
+Il repository è stato clonato in una cartella nuova al commit `bb2c8c3` e installato seguendo solo il [README](../README.md) e [`docs/INSTALLAZIONE.md`](INSTALLAZIONE.md), come il 16 novembre. I file `.env` sono stati ricostruiti dai `.env.example` attuali più la chiave: l'unica differenza rispetto agli esempi è la riga `OPENAI_API_KEY`.
+
+| Passo | Esito |
+|---|---|
+| Test automatici | 178 del data agent (circa 21 s), 225 del back end, 76 del front end; lint pulito |
+| `npm audit` del back end | Nessuna vulnerabilità |
+| `npm audit` del front end | 5 moderate, tutte su dipendenze di sviluppo; con `--omit=dev` nessuna. Sono gli stessi due avvisi del 16 novembre (`minimatch` tramite ESLint, `postcss-selector-parser` tramite `@tailwindcss/typography`); la correzione di `minimatch` resta non applicata, per lo stesso motivo |
+| Indicizzazione del manuale, con il comando del README | 18 chunk, 0 orfani |
+| Avvio del data agent | Rapporto di qualità con 0 avvisi (stesso CSV del riferimento), scritto in `data_agent/quality_reports/` in circa 20 ms; dataframe pulito di forma (1185, 35) |
+| `npm run test:api -- --solo-a` | 23 OK, 0 KO |
+| Le quattro domande della demo dall'interfaccia | Corrette, con gli strumenti attesi; al secondo turno della quarta una sola chiamata ad `analyze_data` |
+
+Controlli sulla demo online, lo stesso giorno:
+
+| Prova | Esito |
+|---|---|
+| Space | commit `9b1c7f1`, che corrisponde al commit `584bbf9` del repository (lo stesso codice di `bb2c8c3`, che cambia solo la presentazione); in esecuzione su CPU Basic; 129 file caricati più `.gitattributes`, nessuno sotto `docs/` |
+| Domande della demo | prima e seconda corrette in una finestra privata, la seconda con il grafico |
+| Bucket | 6 rapporti di qualità in `quality_reports/`; in `benchmark/` la corsa del 18 novembre (`corsa-20261118-0943`, JSON e Markdown) |
+
+Valutazione con il modello reale non ripetuta: dopo la [corsa del 16 novembre](../back%20end/eval/risultati/corsa-20261116-1032.md) nessun prompt è cambiato. Come il 16 novembre, il `venv` è stato creato con il percorso completo dell'interprete (Python 3.13.9).
