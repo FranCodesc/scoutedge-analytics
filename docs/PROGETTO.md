@@ -128,6 +128,7 @@ Le versioni esatte sono in `back end/package.json`, `front end/package.json` e `
 │   ├── nginx.conf                 nginx: unico punto esposto del container
 │   ├── start.sh                   avvio dei servizi nel container
 │   ├── upload_space.sh            caricamento dei file committati sullo Space
+│   ├── benchmark_job.sh           benchmark del data agent su un Job di Hugging Face, con la macchina della demo
 │   └── README_SPACE.md            README dello Space (con la sua intestazione)
 ├── data/
 │   ├── scouting_data.csv          dataset delle osservazioni di scouting

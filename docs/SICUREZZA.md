@@ -37,13 +37,13 @@ Per questo il sistema è pensato per un uso dimostrativo. La demo online lo espo
 - **Limiti dello schema con un ordine di grandezza.** Ogni limite dichiara motivo e fonte, ma dieci regole (per esempio altezza, peso, partite giocate ed età all'osservazione) poggiano su un ordine di grandezza non verificato con una fonte citabile, ed è dichiarato come tale. I margini sui dati reali sono nel rapporto di qualità ([decisions/05](decisions/05-pulizia-e-schema-dei-dati.md)).
 - **Avvisi del rapporto di qualità.** Sono informativi e non bloccano l'avvio; qualche avviso su dati buoni è atteso (fino a 4 nella calibrazione).
 - **Valutazione automatica fuori dall'integrazione continua.** Copre 13 domande e si lancia a mano, perché costa token. Confronta l'insieme degli strumenti usati e non conta le chiamate doppie allo stesso strumento ([`docs/TEST.md`](TEST.md#valutazione-automatica), [decisions/07](decisions/07-test-e-valutazione.md)).
-- **Benchmark su una sola macchina**, più veloce della CPU dello Space ([decisions/09](decisions/09-pandas-e-non-duckdb.md)).
 
 ## Limiti risolti
 
 - **Stato globale di matplotlib tra richieste concorrenti.** Con due analisi in parallelo, una poteva lasciare disattivato il salvataggio dei grafici per tutto il processo, e da quel momento i grafici sparivano fino al riavvio del data agent. Un lock attorno all'esecuzione del codice generato serializza le esecuzioni: un test di concorrenza falliva in 17 giri su 20 sul codice precedente e passa in 20 su 20 con il lock ([decisions/06](decisions/06-esecuzione-del-codice-generato.md)).
 - **Limiti dello schema senza motivazione, in contrasto con il manuale e con la pulizia.** Lo schema bloccava un contratto già scaduto all'osservazione, che la FAQ della sezione 8 del manuale considera un segnale utile, e ammetteva altezze fino a 210 cm mentre la pulizia divideva per 10 quelle sopra 210: un giocatore vero di 211 cm avrebbe fermato il servizio. Ora ogni limite ha motivo e fonte, il contratto scaduto è un indicatore del rapporto di qualità e la pulizia divide solo le altezze di 4 cifre ([decisions/05](decisions/05-pulizia-e-schema-dei-dati.md)).
 - **Rapporti di qualità persi a ogni riavvio della demo.** Stavano in `/tmp` del container; ora vanno nel bucket montato su `/data` e restano tra i riavvii, con un ripiego su `/tmp` se il bucket non è scrivibile ([DEPLOY.md](DEPLOY.md#architettura-del-container)).
+- **Benchmark su una sola macchina, più veloce della demo.** Ora è rifatto anche sulla macchina della demo, con la stessa CPU e gli stessi limiti dello Space: la soglia sul tempo di avvio cade prima, e pandas basta fino a 30 volte i dati attuali invece di 60 ([decisions/09](decisions/09-pandas-e-non-duckdb.md)).
 
 ## In produzione servirebbero
 
