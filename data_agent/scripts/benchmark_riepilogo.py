@@ -4,6 +4,8 @@ Legge il file JSON di una corsa e scrive accanto un file Markdown con: macchina 
 tabella dimensione x misura, domande pandas contro DuckDB e SQLite, verifica di uguaglianza, peso
 del calcolo sul tempo di una risposta del modello e, per ogni dimensione, quali soglie
 sono superate e se DuckDB (o Parquet) e se SQLite risolvono il problema.
+Legge le corse che misurano anche SQLite (dall'11 novembre 2026): le corse del 5 novembre,
+con pandas e DuckDB, hanno il riepilogo generato allora e non si rigenerano.
 
 Uso (da data_agent/):
     python scripts/benchmark_riepilogo.py                       # l'ultima corsa
@@ -123,6 +125,35 @@ NOMI_CRITERI = {"A": "domanda più lenta", "B1": "dataframe pulito",
 UNITA = {"A": "s", "B1": "MB", "B2": "MB", "C": "s"}
 
 
+def _limite_cpu(valore):
+    """cpu.max ("quota periodo" in microsecondi) come numero di CPU."""
+    quota, _, periodo = valore.partition(" ")
+    if quota == "max":
+        return f"nessuno (cpu.max {valore})"
+    return f"{int(quota) / int(periodo or 100000):g} CPU (cpu.max {valore})"
+
+
+def _limite_memoria(valore):
+    """memory.max (byte) in GB, cioè miliardi di byte, come i MB sono milioni di byte."""
+    if valore == "max":
+        return f"nessuno (memory.max {valore})"
+    return f"{int(valore) / 1e9:.1f} GB (memory.max {valore})"
+
+
+def _righe_macchina(m):
+    righe = [["Sistema", m["sistema"]], ["Processore", m["processore"]],
+             ["Core", m["core"]], ["Memoria", f"{m['memoria_totale_gb']} GB"]]
+    # Le corse registrate prima di queste voci non le hanno: il loro riepilogo non cambia.
+    if "limite_cpu" in m:
+        righe.append(["Limite CPU (cgroup)",
+                      _limite_cpu(m["limite_cpu"]) if m["limite_cpu"] else "non rilevato"])
+    if "limite_memoria" in m:
+        righe.append(["Limite memoria (cgroup)",
+                      _limite_memoria(m["limite_memoria"]) if m["limite_memoria"] else "non rilevato"])
+    return righe + [["Python", m["python"]], ["pandas", m["pandas"]], ["numpy", m["numpy"]],
+                    ["duckdb", m["duckdb"]], ["sqlite", m["sqlite"]]]
+
+
 def scrivi_riepilogo(corsa, valutazione):
     dimensioni = corsa["dimensioni"]
     m = corsa["macchina"]
@@ -132,11 +163,7 @@ def scrivi_riepilogo(corsa, valutazione):
         f"si riporta la mediana. Thread di DuckDB: {corsa['thread_duckdb']}. "
         "I MB sono milioni di byte. Il benchmark non usa il modello.", "",
         "## Macchina e versioni", "",
-        _tabella(["Voce", "Valore"], [
-            ["Sistema", m["sistema"]], ["Processore", m["processore"]],
-            ["Core", m["core"]], ["Memoria", f"{m['memoria_totale_gb']} GB"],
-            ["Python", m["python"]], ["pandas", m["pandas"]], ["numpy", m["numpy"]],
-            ["duckdb", m["duckdb"]], ["sqlite", m["sqlite"]]]), "",
+        _tabella(["Voce", "Valore"], _righe_macchina(m)), "",
         "## Regola di decisione", "",
         "Una dimensione è oltre soglia se vale almeno una condizione:", "",
         f"- **A. Domanda**: una delle domande rappresentative supera {SOGLIA_DOMANDA_S} s con pandas.",

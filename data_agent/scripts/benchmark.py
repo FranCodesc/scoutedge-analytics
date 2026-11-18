@@ -453,7 +453,18 @@ def lavora_sqlite(file_sqlite):
 # Coordinatore
 # ---------------------------------------------------------------------------
 
+def _cgroup(nome):
+    """Un limite del container letto da cgroup v2 (per esempio "cpu.max"), o None se il
+    file non c'è (macOS, o Linux senza cgroup v2)."""
+    try:
+        return Path("/sys/fs/cgroup", nome).read_text().strip()
+    except OSError:
+        return None
+
+
 def _macchina_e_versioni():
+    """Macchina e versioni. In un container os.cpu_count() e la memoria totale descrivono
+    la macchina che lo ospita: i limiti del container sono in limite_cpu e limite_memoria."""
     import duckdb
     import psutil
     marca = platform.processor() or platform.machine()
@@ -463,9 +474,18 @@ def _macchina_e_versioni():
                                    capture_output=True, text=True, check=True).stdout.strip()
         except (OSError, subprocess.CalledProcessError):
             pass
+    elif sys.platform.startswith("linux"):
+        try:
+            for riga in Path("/proc/cpuinfo").read_text().splitlines():
+                if riga.startswith("model name"):
+                    marca = riga.split(":", 1)[1].strip()
+                    break
+        except OSError:
+            pass
     return {
         "sistema": platform.platform(), "processore": marca,
         "core": os.cpu_count(), "memoria_totale_gb": round(psutil.virtual_memory().total / 1e9, 1),
+        "limite_cpu": _cgroup("cpu.max"), "limite_memoria": _cgroup("memory.max"),
         "python": platform.python_version(), "pandas": pd.__version__,
         "numpy": np.__version__, "duckdb": duckdb.__version__,
         "sqlite": sqlite3.sqlite_version,
